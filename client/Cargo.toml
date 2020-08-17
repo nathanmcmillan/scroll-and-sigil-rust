@@ -1,11 +1,11 @@
 [package]
-name = "scroll-and-sigil-editor-browser"
+name = "scroll-and-sigil-client"
 version = "0.1.0"
-authors = ["Nate M <email>"]
+authors = ["Nathan M <natemmcm@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-editor = { path = "../scroll-sigil-lib" }
+sigil = { path = "../sigil" }
 rand = "0.7.3"
 wasm-bindgen = "0.2.67"
 js-sys = "0.3.44"

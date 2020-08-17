@@ -32,6 +32,9 @@ impl Vector2 {
     pub fn eq(&self, other: Vector2) -> bool {
         float_eq(self.x, other.x) && float_eq(self.y, other.y)
     }
+    pub fn mul(&self, scalar: f32) -> Vector2 {
+        Vector2::new(self.x * scalar, self.y * scalar)
+    }
 }
 
 impl Default for Vector2 {

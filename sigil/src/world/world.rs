@@ -1,17 +1,16 @@
 use crate::map::line::Line;
 use crate::map::sector::Sector;
-use crate::map::thing::Thing;
-use crate::map::thing::Updatable;
 use crate::map::triangulate::triangulate_sector;
+use crate::things::thing::Thing;
+use crate::things::thing::Updatable;
 
 use std::collections::HashSet;
-use std::rc::Rc;
 
 const WORLD_SCALE: f32 = 1.0; // 0.25;
 const WORLD_CELL_SHIFT: i32 = 5;
 
 pub struct WorldCell {
-    lines: Vec<Line>,
+    pub lines: Vec<Line>,
 }
 
 pub struct World {
@@ -89,7 +88,7 @@ impl World {
                     list.push(k);
                 }
             }
-            let mut sector = &mut self.sectors[i];
+            let sector = &mut self.sectors[i];
             println!("inside list {:?}", list);
             sector.inside.append(&mut list);
         }

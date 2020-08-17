@@ -119,7 +119,7 @@ fn vector_line_intersect(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool
         return false;
     }
     let denominator: f32 = (a1 * b2) - (a2 * b1);
-    if (float_zero(denominator)) {
+    if float_zero(denominator) {
         return false;
     }
     true
@@ -330,14 +330,14 @@ fn classify(polygons: &Vec<Rc<RefCell<Polygon>>>, monotone: &mut Vec<Rc<RefCell<
         let both_above = previous.y < current.point.y && next.y <= current.point.y;
         let both_below = previous.y >= current.point.y && next.y >= current.point.y;
         let collinear = next.y == current.point.y;
-        if (both_above && reflex) {
+        if both_above && reflex {
             monotone.push(polygon.clone());
-        } else if (both_above && !reflex) {
-            if (!collinear) {
+        } else if both_above && !reflex {
+            if !collinear {
                 split.push(polygon.clone());
             }
-        } else if (both_below && !reflex) {
-            if (!collinear) {
+        } else if both_below && !reflex {
+            if !collinear {
                 merge.push(polygon.clone());
             }
         }
@@ -408,9 +408,21 @@ fn clip(
         if triangle_valid(vecs, previous, current, next) {
             let tri;
             if floor {
-                tri = Triangle::new(previous, current, next, sec.floor, sec.floor_texture);
+                tri = Triangle::new(
+                    previous.mul(scale),
+                    current.mul(scale),
+                    next.mul(scale),
+                    sec.floor,
+                    sec.floor_texture,
+                );
             } else {
-                tri = Triangle::new(next, current, previous, sec.ceiling, sec.ceiling_texture);
+                tri = Triangle::new(
+                    next.mul(scale),
+                    current.mul(scale),
+                    previous.mul(scale),
+                    sec.ceiling,
+                    sec.ceiling_texture,
+                );
             }
             triangles.push(tri);
             vecs.remove(i);
@@ -424,9 +436,21 @@ fn clip(
     }
     let tri;
     if floor {
-        tri = Triangle::new(vecs[0], vecs[1], vecs[2], sec.floor, sec.floor_texture);
+        tri = Triangle::new(
+            vecs[0].mul(scale),
+            vecs[1].mul(scale),
+            vecs[2].mul(scale),
+            sec.floor,
+            sec.floor_texture,
+        );
     } else {
-        tri = Triangle::new(vecs[2], vecs[1], vecs[0], sec.ceiling, sec.ceiling_texture);
+        tri = Triangle::new(
+            vecs[2].mul(scale),
+            vecs[1].mul(scale),
+            vecs[0].mul(scale),
+            sec.ceiling,
+            sec.ceiling_texture,
+        );
     }
     triangles.push(tri);
 }
@@ -453,19 +477,19 @@ fn clip_all(
                 let angle_1 = (a.x - b.x).atan2(a.y - b.y);
                 let angle_2 = (b.x - c.x).atan2(b.y - c.y);
                 let mut interior = angle_2 - angle_1;
-                if (interior < 0.0) {
+                if interior < 0.0 {
                     interior += 2.0 * std::f32::consts::PI;
                 }
                 interior += std::f32::consts::PI;
-                if (interior > 2.0 * std::f32::consts::PI) {
+                if interior > 2.0 * std::f32::consts::PI {
                     interior -= 2.0 * std::f32::consts::PI;
                 }
-                if (interior < angle) {
+                if interior < angle {
                     previous = Some(ref_previous.clone());
                     angle = interior;
                 }
             }
-            let mut previous = previous.unwrap();
+            let previous = previous.unwrap();
             {
                 let mut mutate_current = current.borrow_mut();
                 polygon_remove_point(&mut mutate_current.next, a);

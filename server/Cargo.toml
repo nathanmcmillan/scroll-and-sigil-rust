@@ -1,0 +1,8 @@
+[package]
+name = "scroll-and-sigil-server"
+version = "0.1.0"
+authors = ["Nathan M <natemmcm@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+sigil = { path = "../sigil" }

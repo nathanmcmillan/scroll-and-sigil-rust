@@ -2,8 +2,6 @@ use crate::map::line::Line;
 use crate::map::triangle::Triangle;
 use crate::math::vector::Vector2;
 
-use std::rc::{Rc, Weak};
-
 pub struct Sector {
     pub bottom: f32,
     pub floor: f32,
@@ -14,8 +12,6 @@ pub struct Sector {
     pub vecs: Vec<Vector2>,
     pub lines: Vec<Line>,
     pub triangles: Vec<Triangle>,
-    // pub inside: Vec<Rc<Sector>>,
-    // pub outside: Option<Rc<Sector>>,
     pub inside: Vec<usize>,
     pub outside: Option<usize>,
 }
