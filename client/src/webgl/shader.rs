@@ -3,11 +3,7 @@ use web_sys::WebGlProgram;
 use web_sys::WebGlRenderingContext;
 use web_sys::WebGlShader;
 
-pub fn compile(
-    context: &WebGlRenderingContext,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
+pub fn compile(context: &WebGlRenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
     let shader = context
         .create_shader(shader_type)
         .ok_or_else(|| String::from("Unable to create shader object"))?;
@@ -26,11 +22,7 @@ pub fn compile(
     }
 }
 
-pub fn program(
-    context: &WebGlRenderingContext,
-    vertex: &WebGlShader,
-    fragment: &WebGlShader,
-) -> Result<WebGlProgram, String> {
+pub fn program(context: &WebGlRenderingContext, vertex: &WebGlShader, fragment: &WebGlShader) -> Result<WebGlProgram, String> {
     let program = context
         .create_program()
         .ok_or_else(|| String::from("Unable to create shader object"))?;

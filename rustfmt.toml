@@ -1,0 +1,5 @@
+max_width = 140
+fn_call_width = 140
+blank_lines_lower_bound = 1
+imports_layout = "Vertical"
+newline_style = "Unix"

@@ -15,12 +15,14 @@ version = "0.3.44"
 features = [
   'Document',
   'Element',
+  'CssStyleDeclaration',
   'HtmlCanvasElement',
   'WebGlBuffer',
   'WebGlRenderingContext',
   'WebGlProgram',
   'WebGlShader',
   'Window',
+  'MouseEvent',
   'console'
 ]
 

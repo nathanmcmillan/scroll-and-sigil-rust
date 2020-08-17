@@ -1,12 +1,22 @@
 #![allow(unused)]
 #![allow(dead_code)]
 
+use js_sys::Function;
+use js_sys::Object;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::console;
+use web_sys::Document;
+use web_sys::Element;
+use web_sys::HtmlCanvasElement;
+use web_sys::MouseEvent;
 use web_sys::WebGlProgram;
 use web_sys::WebGlRenderingContext;
 use web_sys::WebGlShader;
+use web_sys::Window;
+
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use sigil::map::line::Line;
 use sigil::map::sector::Sector;
@@ -18,18 +28,101 @@ pub mod webgl;
 
 use webgl::shader;
 
+fn print(s: &'static str) {
+    console::log_1(&s.into());
+}
+
+fn window() -> Window {
+    web_sys::window().unwrap()
+}
+
+fn canvas(window: &Window, document: &Document) -> Result<HtmlCanvasElement, JsValue> {
+    let canvas = document.create_element("canvas")?.dyn_into::<HtmlCanvasElement>()?;
+
+    let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
+    let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+
+    canvas.set_width(width);
+    canvas.set_height(height);
+
+    let style = canvas.style();
+    style.set_property("display", "block")?;
+    style.set_property("position", "absolute")?;
+    style.set_property("left", "0")?;
+    style.set_property("right", "0")?;
+    style.set_property("top", "0")?;
+    style.set_property("bottom", "0")?;
+    style.set_property("margin", "0")?;
+
+    document.body().unwrap().append_child(&canvas)?;
+
+    Ok(canvas)
+}
+
+fn webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingContext, Object> {
+    canvas.get_context("webgl")?.unwrap().dyn_into::<WebGlRenderingContext>()
+}
+
+fn request_animation_frame(function: &Closure<dyn FnMut()>) {
+    window().request_animation_frame(function.as_ref().unchecked_ref()).unwrap();
+}
+
+fn webgl_setup(context: &WebGlRenderingContext) {
+    context.clear_color(0.0, 0.0, 0.0, 1.0);
+    context.depth_func(WebGlRenderingContext::EQUAL);
+    context.cull_face(WebGlRenderingContext::BACK);
+    context.blend_func(WebGlRenderingContext::SRC_ALPHA, WebGlRenderingContext::ONE_MINUS_SRC_ALPHA);
+    context.disable(WebGlRenderingContext::CULL_FACE);
+    context.disable(WebGlRenderingContext::BLEND);
+    context.disable(WebGlRenderingContext::DEPTH_TEST);
+}
+
+fn draw(context: &WebGlRenderingContext) {
+    print("draw!");
+
+    context.clear_color(0.0, 0.0, 0.0, 1.0);
+    context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+
+    let vertices = 9;
+    context.draw_arrays(WebGlRenderingContext::TRIANGLES, 0, (vertices / 3) as i32);
+}
+
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    console::log_1(&"foobar".into());
+    print("scroll and sigil");
 
-    let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id("canvas").unwrap();
-    let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
-
-    let context = canvas
-        .get_context("webgl")?
-        .unwrap()
-        .dyn_into::<WebGlRenderingContext>()?;
+    let window = window();
+    let document = window.document().unwrap();
+    let canvas = canvas(&window, &document)?;
+    let context = webgl_context(&canvas)?;
+    let window = Rc::new(window);
+    let document = Rc::new(document);
+    let context = Rc::new(context);
+    webgl_setup(&context);
+    {
+        let context = context.clone();
+        let closure = Closure::wrap(Box::new(move |event: MouseEvent| {
+            print("mouse down!");
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let document = document.clone();
+        let closure = Closure::wrap(Box::new(move |event: MouseEvent| {
+            print("key down!");
+        }) as Box<dyn FnMut(_)>);
+        document.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let window = window.clone();
+        let closure = Closure::wrap(Box::new(move |event: MouseEvent| {
+            print("resize!");
+        }) as Box<dyn FnMut(_)>);
+        window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
 
     let vert_shader = webgl::shader::compile(
         &context,
@@ -50,6 +143,7 @@ pub fn main() -> Result<(), JsValue> {
        }
    "#,
     )?;
+
     let program = webgl::shader::program(&context, &vert_shader, &frag_shader)?;
     context.use_program(Some(&program));
 
@@ -61,23 +155,22 @@ pub fn main() -> Result<(), JsValue> {
     unsafe {
         let vert_array = js_sys::Float32Array::view(&vertices);
 
-        context.buffer_data_with_array_buffer_view(
-            WebGlRenderingContext::ARRAY_BUFFER,
-            &vert_array,
-            WebGlRenderingContext::STATIC_DRAW,
-        );
+        context.buffer_data_with_array_buffer_view(WebGlRenderingContext::ARRAY_BUFFER, &vert_array, WebGlRenderingContext::STATIC_DRAW);
     }
 
     context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
     context.enable_vertex_attrib_array(0);
 
-    context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+    {
+        let context = context.clone();
+        let f = Rc::new(RefCell::new(None));
+        let g = f.clone();
+        *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            draw(&context);
+            request_animation_frame(f.borrow().as_ref().unwrap());
+        }) as Box<dyn FnMut()>));
+        request_animation_frame(g.borrow().as_ref().unwrap());
+    }
 
-    context.draw_arrays(
-        WebGlRenderingContext::TRIANGLES,
-        0,
-        (vertices.len() / 3) as i32,
-    );
     Ok(())
 }
