@@ -1,5 +1,5 @@
-use crate::graphics::render_buffer::RenderBuffer;
 use crate::map::wall::Wall;
+use crate::render::buffer::RenderBuffer;
 
 pub fn render_wall(b: &mut RenderBuffer, wall: &Wall) {
     let pos = b.vertex_position;

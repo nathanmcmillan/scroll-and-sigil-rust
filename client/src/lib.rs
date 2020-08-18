@@ -1,32 +1,19 @@
-#![allow(unused)]
-#![allow(dead_code)]
+pub mod app;
+pub mod run;
+pub mod webgl;
 
-use js_sys::Function;
+use app::App;
 use js_sys::Object;
+use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::console;
 use web_sys::Document;
-use web_sys::Element;
 use web_sys::HtmlCanvasElement;
 use web_sys::MouseEvent;
-use web_sys::WebGlProgram;
 use web_sys::WebGlRenderingContext;
-use web_sys::WebGlShader;
 use web_sys::Window;
-
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use sigil::map::line::Line;
-use sigil::map::sector::Sector;
-use sigil::map::triangle::Triangle;
-use sigil::math::vector::Vector2;
-use sigil::world::world::World;
-
-pub mod webgl;
-
-use webgl::shader;
 
 fn print(s: &'static str) {
     console::log_1(&s.into());
@@ -77,14 +64,9 @@ fn webgl_setup(context: &WebGlRenderingContext) {
     context.disable(WebGlRenderingContext::DEPTH_TEST);
 }
 
-fn draw(context: &WebGlRenderingContext) {
-    print("draw!");
-
-    context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
-
-    let vertices = 9;
-    context.draw_arrays(WebGlRenderingContext::TRIANGLES, 0, (vertices / 3) as i32);
+fn tick(app: &mut App) {
+    app.update();
+    app.render();
 }
 
 #[wasm_bindgen(start)]
@@ -100,8 +82,7 @@ pub fn main() -> Result<(), JsValue> {
     let context = Rc::new(context);
     webgl_setup(&context);
     {
-        let context = context.clone();
-        let closure = Closure::wrap(Box::new(move |event: MouseEvent| {
+        let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
             print("mouse down!");
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
@@ -109,7 +90,7 @@ pub fn main() -> Result<(), JsValue> {
     }
     {
         let document = document.clone();
-        let closure = Closure::wrap(Box::new(move |event: MouseEvent| {
+        let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
             print("key down!");
         }) as Box<dyn FnMut(_)>);
         document.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
@@ -117,7 +98,7 @@ pub fn main() -> Result<(), JsValue> {
     }
     {
         let window = window.clone();
-        let closure = Closure::wrap(Box::new(move |event: MouseEvent| {
+        let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
             print("resize!");
         }) as Box<dyn FnMut(_)>);
         window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
@@ -161,12 +142,13 @@ pub fn main() -> Result<(), JsValue> {
     context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
     context.enable_vertex_attrib_array(0);
 
+    let mut app = App::new(context.clone());
+
     {
-        let context = context.clone();
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            draw(&context);
+            tick(&mut app);
             request_animation_frame(f.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
         request_animation_frame(g.borrow().as_ref().unwrap());

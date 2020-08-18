@@ -1,4 +1,3 @@
-use web_sys::console;
 use web_sys::WebGlProgram;
 use web_sys::WebGlRenderingContext;
 use web_sys::WebGlShader;
