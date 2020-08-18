@@ -12,7 +12,7 @@ use web_sys::console;
 use web_sys::Document;
 use web_sys::HtmlCanvasElement;
 use web_sys::MouseEvent;
-use web_sys::WebGlRenderingContext;
+use web_sys::WebGl2RenderingContext;
 use web_sys::Window;
 
 fn print(s: &'static str) {
@@ -23,11 +23,8 @@ fn window() -> Window {
     web_sys::window().unwrap()
 }
 
-fn canvas(window: &Window, document: &Document) -> Result<HtmlCanvasElement, JsValue> {
+fn canvas(document: &Document, width: u32, height: u32) -> Result<HtmlCanvasElement, JsValue> {
     let canvas = document.create_element("canvas")?.dyn_into::<HtmlCanvasElement>()?;
-
-    let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
-    let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
 
     canvas.set_width(width);
     canvas.set_height(height);
@@ -46,22 +43,25 @@ fn canvas(window: &Window, document: &Document) -> Result<HtmlCanvasElement, JsV
     Ok(canvas)
 }
 
-fn webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingContext, Object> {
-    canvas.get_context("webgl")?.unwrap().dyn_into::<WebGlRenderingContext>()
+fn webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGl2RenderingContext, Object> {
+    canvas
+        .get_context("webgl2")?
+        .expect("Unable to get WebGL2 context")
+        .dyn_into::<WebGl2RenderingContext>()
 }
 
 fn request_animation_frame(function: &Closure<dyn FnMut()>) {
     window().request_animation_frame(function.as_ref().unchecked_ref()).unwrap();
 }
 
-fn webgl_setup(context: &WebGlRenderingContext) {
+fn webgl_setup(context: &WebGl2RenderingContext) {
     context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.depth_func(WebGlRenderingContext::EQUAL);
-    context.cull_face(WebGlRenderingContext::BACK);
-    context.blend_func(WebGlRenderingContext::SRC_ALPHA, WebGlRenderingContext::ONE_MINUS_SRC_ALPHA);
-    context.disable(WebGlRenderingContext::CULL_FACE);
-    context.disable(WebGlRenderingContext::BLEND);
-    context.disable(WebGlRenderingContext::DEPTH_TEST);
+    context.depth_func(WebGl2RenderingContext::EQUAL);
+    context.cull_face(WebGl2RenderingContext::BACK);
+    context.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+    context.disable(WebGl2RenderingContext::CULL_FACE);
+    context.disable(WebGl2RenderingContext::BLEND);
+    context.disable(WebGl2RenderingContext::DEPTH_TEST);
 }
 
 fn tick(app: &mut App) {
@@ -75,7 +75,9 @@ pub fn main() -> Result<(), JsValue> {
 
     let window = window();
     let document = window.document().unwrap();
-    let canvas = canvas(&window, &document)?;
+    let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
+    let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+    let canvas = canvas(&document, width, height)?;
     let context = webgl_context(&canvas)?;
     let window = Rc::new(window);
     let document = Rc::new(document);
@@ -105,44 +107,8 @@ pub fn main() -> Result<(), JsValue> {
         closure.forget();
     }
 
-    let vert_shader = webgl::shader::compile(
-        &context,
-        WebGlRenderingContext::VERTEX_SHADER,
-        r#"
-       attribute vec4 position;
-       void main() {
-           gl_Position = position;
-       }
-   "#,
-    )?;
-    let frag_shader = webgl::shader::compile(
-        &context,
-        WebGlRenderingContext::FRAGMENT_SHADER,
-        r#"
-       void main() {
-           gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-       }
-   "#,
-    )?;
-
-    let program = webgl::shader::program(&context, &vert_shader, &frag_shader)?;
-    context.use_program(Some(&program));
-
-    let vertices: [f32; 9] = [-0.7, -0.7, 0.0, 0.7, -0.7, 0.0, 0.0, 0.7, 0.0];
-
-    let buffer = context.create_buffer().ok_or("failed to create buffer")?;
-    context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
-
-    unsafe {
-        let vert_array = js_sys::Float32Array::view(&vertices);
-
-        context.buffer_data_with_array_buffer_view(WebGlRenderingContext::ARRAY_BUFFER, &vert_array, WebGlRenderingContext::STATIC_DRAW);
-    }
-
-    context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
-    context.enable_vertex_attrib_array(0);
-
-    let mut app = App::new(context.clone());
+    let mut app = App::new(context.clone(), width, height);
+    app.initialize();
 
     {
         let f = Rc::new(RefCell::new(None));

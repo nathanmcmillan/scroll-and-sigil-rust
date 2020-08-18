@@ -9,6 +9,7 @@ pub struct Triangle {
     pub uva: Vector2,
     pub uvb: Vector2,
     pub uvc: Vector2,
+    pub normal: f32,
 }
 
 impl Triangle {
@@ -22,6 +23,7 @@ impl Triangle {
             uva: Vector2::default(),
             uvb: Vector2::default(),
             uvc: Vector2::default(),
+            normal: 0.0,
         }
     }
 }

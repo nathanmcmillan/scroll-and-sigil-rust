@@ -1,5 +1,8 @@
 import http.server
 import socketserver
+import os
+
+os.chdir('public')
 
 handle = http.server.SimpleHTTPRequestHandler
 handle.extensions_map.update({

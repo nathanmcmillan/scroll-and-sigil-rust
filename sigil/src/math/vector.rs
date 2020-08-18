@@ -35,6 +35,12 @@ impl Vector2 {
     pub fn mul(&self, scalar: f32) -> Vector2 {
         Vector2::new(self.x * scalar, self.y * scalar)
     }
+    pub fn normal(&self, other: Vector2) -> Vector2 {
+        let x = self.y - other.y;
+        let y = -(self.x - other.x);
+        let m = (x * x + y * y).sqrt();
+        Vector2::new(x / m, y / m)
+    }
 }
 
 impl Default for Vector2 {

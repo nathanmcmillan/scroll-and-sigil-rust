@@ -1,4 +1,4 @@
-pub fn matrix_identity(matrix: &mut [f32; 16]) {
+pub fn identity(matrix: &mut [f32; 16]) {
     matrix[0] = 1.0;
     matrix[1] = 0.0;
     matrix[2] = 0.0;
@@ -20,7 +20,7 @@ pub fn matrix_identity(matrix: &mut [f32; 16]) {
     matrix[15] = 1.0;
 }
 
-pub fn matrix_orthographic(matrix: &mut [f32; 16], left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) {
+pub fn orthographic(matrix: &mut [f32; 16], left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) {
     matrix[0] = 2.0 / (right - left);
     matrix[1] = 0.0;
     matrix[2] = 0.0;
@@ -42,7 +42,7 @@ pub fn matrix_orthographic(matrix: &mut [f32; 16], left: f32, right: f32, bottom
     matrix[15] = 1.0;
 }
 
-pub fn matrix_frustum(matrix: &mut [f32; 16], left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) {
+pub fn frustum(matrix: &mut [f32; 16], left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) {
     matrix[0] = (2.0 * near) / (right - left);
     matrix[1] = 0.0;
     matrix[2] = 0.0;
@@ -64,23 +64,23 @@ pub fn matrix_frustum(matrix: &mut [f32; 16], left: f32, right: f32, bottom: f32
     matrix[15] = 0.0;
 }
 
-pub fn matrix_perspective(matrix: &mut [f32; 16], fov: f32, near: f32, far: f32, aspect: f32) {
+pub fn perspective(matrix: &mut [f32; 16], fov: f32, near: f32, far: f32, aspect: f32) {
     let top = near * (fov * std::f32::consts::PI / 360.0).tan();
     let bottom = -top;
     let left = bottom * aspect;
     let right = top * aspect;
 
-    matrix_frustum(matrix, left, right, bottom, top, near, far);
+    frustum(matrix, left, right, bottom, top, near, far);
 }
 
-pub fn matrix_translate(matrix: &mut [f32; 16], x: f32, y: f32, z: f32) {
+pub fn translate(matrix: &mut [f32; 16], x: f32, y: f32, z: f32) {
     matrix[12] = x * matrix[0] + y * matrix[4] + z * matrix[8] + matrix[12];
     matrix[13] = x * matrix[1] + y * matrix[5] + z * matrix[9] + matrix[13];
     matrix[14] = x * matrix[2] + y * matrix[6] + z * matrix[10] + matrix[14];
     matrix[15] = x * matrix[3] + y * matrix[7] + z * matrix[11] + matrix[15];
 }
 
-pub fn matrix_multiply(matrix: &mut [f32; 16], a: &[f32; 16], b: &[f32; 16]) {
+pub fn multiply(matrix: &mut [f32; 16], a: &[f32; 16], b: &[f32; 16]) {
     matrix[0] = a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3];
     matrix[1] = a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3];
     matrix[2] = a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3];

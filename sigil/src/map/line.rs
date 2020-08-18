@@ -36,16 +36,13 @@ impl Line {
         if up >= 0 {
             top = Some(Wall::new(a, b, up))
         }
-        let x = a.y - b.y;
-        let y = -(a.x - b.x);
-        let m = (x * x + y * y).sqrt();
         Line {
             bottom,
             middle,
             top,
             a,
             b,
-            normal: Vector2::new(x / m, y / m),
+            normal: a.normal(b),
             plus: Option::None,
             minus: Option::None,
         }
@@ -63,11 +60,7 @@ impl Line {
         let r3: f32 = (a1 * with.a.x) + (b1 * with.a.y) + c1;
         let r4: f32 = (a1 * with.b.x) + (b1 * with.b.y) + c1;
         if !float_zero(r3) && !float_zero(r4) && (r3 * r4 >= 0.0) {
-            return Intersect {
-                x: 0.0,
-                y: 0.0,
-                ok: false,
-            };
+            return Intersect { x: 0.0, y: 0.0, ok: false };
         }
 
         // TODO

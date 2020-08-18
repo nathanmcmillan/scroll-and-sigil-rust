@@ -3,6 +3,7 @@ use crate::math::vector::Vector2;
 pub struct Wall {
     pub a: Vector2,
     pub b: Vector2,
+    pub normal: Vector2,
     pub texture: i32,
     pub floor: f32,
     pub ceiling: f32,
@@ -17,6 +18,7 @@ impl Wall {
         Wall {
             a,
             b,
+            normal: a.normal(b),
             texture,
             floor: 0.0,
             ceiling: 0.0,
