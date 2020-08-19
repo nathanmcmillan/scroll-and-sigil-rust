@@ -19,8 +19,10 @@ fn print(s: &'static str) {
     console::log_1(&s.into());
 }
 
-fn window() -> Window {
-    web_sys::window().unwrap()
+fn dimensions(window: &Window) -> (u32, u32) {
+    let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
+    let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+    (width, height)
 }
 
 fn canvas(document: &Document, width: u32, height: u32) -> Result<HtmlCanvasElement, JsValue> {
@@ -51,17 +53,10 @@ fn webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGl2RenderingContext, O
 }
 
 fn request_animation_frame(function: &Closure<dyn FnMut()>) {
-    window().request_animation_frame(function.as_ref().unchecked_ref()).unwrap();
-}
-
-fn webgl_setup(context: &WebGl2RenderingContext) {
-    context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.depth_func(WebGl2RenderingContext::EQUAL);
-    context.cull_face(WebGl2RenderingContext::BACK);
-    context.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-    context.disable(WebGl2RenderingContext::CULL_FACE);
-    context.disable(WebGl2RenderingContext::BLEND);
-    context.disable(WebGl2RenderingContext::DEPTH_TEST);
+    web_sys::window()
+        .unwrap()
+        .request_animation_frame(function.as_ref().unchecked_ref())
+        .unwrap();
 }
 
 fn tick(app: &mut App) {
@@ -69,20 +64,29 @@ fn tick(app: &mut App) {
     app.render();
 }
 
+#[cfg(feature = "console_error_panic_hook")]
+fn console_panic_hook() {
+    print("using console panic hook feature");
+    use std::panic;
+    extern crate console_error_panic_hook;
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+}
+
+#[cfg(not(feature = "console_error_panic_hook"))]
+pub fn console_panic_hook() {}
+
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     print("scroll and sigil");
+    console_panic_hook();
 
-    let window = window();
+    let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
-    let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
-    let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+    let (width, height) = dimensions(&window);
     let canvas = canvas(&document, width, height)?;
     let context = webgl_context(&canvas)?;
-    let window = Rc::new(window);
     let document = Rc::new(document);
     let context = Rc::new(context);
-    webgl_setup(&context);
     {
         let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
             print("mouse down!");
@@ -91,25 +95,24 @@ pub fn main() -> Result<(), JsValue> {
         closure.forget();
     }
     {
-        let document = document.clone();
         let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
             print("key down!");
         }) as Box<dyn FnMut(_)>);
         document.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-    {
-        let window = window.clone();
-        let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
-            print("resize!");
-        }) as Box<dyn FnMut(_)>);
-        window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
-        closure.forget();
-    }
-
-    let mut app = App::new(context.clone(), width, height);
-    app.initialize();
-
+    let mut app = App::new(context.clone());
+    app.initialize()?;
+    app.resize(width, height);
+    // {
+    //     let closure = Closure::wrap(Box::new(move || {
+    //         let (width, height) = dimensions(&get_window());
+    //         print("resize!");
+    //         app.resize(width, height);
+    //     }) as Box<dyn FnMut()>);
+    //     window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
+    //     closure.forget();
+    // }
     {
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();

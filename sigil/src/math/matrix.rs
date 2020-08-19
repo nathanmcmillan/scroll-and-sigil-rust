@@ -101,3 +101,90 @@ pub fn multiply(matrix: &mut [f32; 16], a: &[f32; 16], b: &[f32; 16]) {
     matrix[14] = a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15];
     matrix[15] = a[3] * b[12] + a[7] * b[13] + a[11] * b[14] + a[15] * b[15];
 }
+
+pub fn rotate_x(matrix: &mut [f32; 16], sine: f32, cosine: f32) {
+    let mut temp = [0.0; 16];
+
+    temp[0] = 1.0;
+    temp[1] = 0.0;
+    temp[2] = 0.0;
+    temp[3] = 0.0;
+
+    temp[4] = 0.0;
+    temp[5] = cosine;
+    temp[6] = sine;
+    temp[7] = 0.0;
+
+    temp[8] = 0.0;
+    temp[9] = -sine;
+    temp[10] = cosine;
+    temp[11] = 0.0;
+
+    temp[12] = 0.0;
+    temp[13] = 0.0;
+    temp[14] = 0.0;
+    temp[15] = 1.0;
+
+    let mut copy = [0.0; 16];
+    copy.copy_from_slice(matrix);
+
+    multiply(matrix, &copy, &temp);
+}
+
+pub fn rotate_y(matrix: &mut [f32; 16], sine: f32, cosine: f32) {
+    let mut temp = [0.0; 16];
+
+    temp[0] = cosine;
+    temp[1] = 0.0;
+    temp[2] = -sine;
+    temp[3] = 0.0;
+
+    temp[4] = 0.0;
+    temp[5] = 1.0;
+    temp[6] = 0.0;
+    temp[7] = 0.0;
+
+    temp[8] = sine;
+    temp[9] = 0.0;
+    temp[10] = cosine;
+    temp[11] = 0.0;
+
+    temp[12] = 0.0;
+    temp[13] = 0.0;
+    temp[14] = 0.0;
+    temp[15] = 1.0;
+
+    let mut copy = [0.0; 16];
+    copy.copy_from_slice(matrix);
+
+    multiply(matrix, &copy, &temp);
+}
+
+pub fn rotate_z(matrix: &mut [f32; 16], sine: f32, cosine: f32) {
+    let mut temp = [0.0; 16];
+
+    temp[0] = cosine;
+    temp[1] = sine;
+    temp[2] = 0.0;
+    temp[3] = 0.0;
+
+    temp[4] = -sine;
+    temp[5] = cosine;
+    temp[6] = 0.0;
+    temp[7] = 0.0;
+
+    temp[8] = 0.0;
+    temp[9] = 0.0;
+    temp[10] = 1.0;
+    temp[11] = 0.0;
+
+    temp[12] = 0.0;
+    temp[13] = 0.0;
+    temp[14] = 0.0;
+    temp[15] = 1.0;
+
+    let mut copy = [0.0; 16];
+    copy.copy_from_slice(matrix);
+
+    multiply(matrix, &copy, &temp);
+}

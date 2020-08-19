@@ -20,10 +20,10 @@ impl RenderBuffer {
             normal,
             bone,
             vertex_position: 0,
-            vertices: Vec::with_capacity(vertices * (position + color + texture + normal + bone)),
+            vertices: vec![0.0; vertices * (position + color + texture + normal + bone)],
             index_position: 0,
             index_offset: 0,
-            indices: Vec::with_capacity(indices),
+            indices: vec![0; indices],
         }
     }
 

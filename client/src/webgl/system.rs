@@ -1,3 +1,4 @@
+use crate::webgl;
 use crate::webgl::buffer::WebGlRenderBuffer;
 use std::mem;
 use std::rc::Rc;
@@ -20,7 +21,13 @@ impl WebGlRenderSystem {
         }
     }
 
-    pub fn program(&mut self, index: usize) {
+    pub fn add_program(&mut self, vertex: &str, fragment: &str) -> Result<(), String> {
+        let program = webgl::shader::program(&self.context, &vertex, &fragment)?;
+        self.programs.push(program);
+        Ok(())
+    }
+
+    pub fn use_program(&mut self, index: usize) {
         self.program = index;
         self.context.use_program(Some(&self.programs[index]));
     }
