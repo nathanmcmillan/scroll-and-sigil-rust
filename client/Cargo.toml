@@ -7,7 +7,9 @@ edition = "2018"
 [dependencies]
 sigil = { path = "../sigil" }
 rand = "0.7.3"
+futures = "0.3"
 wasm-bindgen = "0.2.67"
+wasm-bindgen-futures = "0.4.17"
 js-sys = "0.3.44"
 console_error_panic_hook = { version = "0.1.6", optional = true }
 
@@ -18,6 +20,7 @@ features = [
   'Element',
   'CssStyleDeclaration',
   'HtmlCanvasElement',
+  'HtmlImageElement',
   'WebGl2RenderingContext',
   'WebGlBuffer',
   'WebGlVertexArrayObject',
@@ -25,7 +28,13 @@ features = [
   'WebGlTexture',
   'WebGlShader',
   'Window',
+  'Headers',
+  'Request',
+  'RequestInit',
+  'RequestMode',
+  'Response',
   'MouseEvent',
+  'KeyboardEvent',
   'console'
 ]
 

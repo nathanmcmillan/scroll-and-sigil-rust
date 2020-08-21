@@ -1,4 +1,5 @@
 use crate::map::line::Line;
+use crate::map::sector;
 use crate::map::sector::Sector;
 use crate::map::triangulate::triangulate_sector;
 use crate::things::thing::Thing;
@@ -6,7 +7,7 @@ use crate::things::thing::Updatable;
 
 use std::collections::HashSet;
 
-const WORLD_SCALE: f32 = 1.0; // 0.25;
+const WORLD_SCALE: f32 = 0.25;
 const WORLD_CELL_SHIFT: i32 = 5;
 
 pub struct WorldCell {
@@ -14,11 +15,11 @@ pub struct WorldCell {
 }
 
 pub struct World {
-    things: Vec<Thing>,
-    sectors: Vec<Sector>,
-    cells: Vec<WorldCell>,
-    cell_columns: usize,
-    cell_rows: usize,
+    pub things: Vec<Thing>,
+    pub sectors: Vec<Sector>,
+    pub cells: Vec<WorldCell>,
+    pub cell_columns: usize,
+    pub cell_rows: usize,
 }
 
 impl World {
@@ -31,12 +32,24 @@ impl World {
             cell_rows: 0,
         }
     }
-    pub fn push_sector(&mut self, sector: Sector) {
+
+    pub fn add_sector(&mut self, mut sector: Sector) {
+        sector.index = self.sectors.len();
         self.sectors.push(sector);
     }
 
-    pub fn get_sectors(&self) -> &Vec<Sector> {
-        &self.sectors
+    pub fn add_thing(&mut self, thing: Thing) {
+        self.things.push(thing);
+    }
+
+    pub fn find_sector(&self, x: f32, y: f32) -> Option<&Sector> {
+        for sector in self.sectors.iter() {
+            if sector.outside.is_some() {
+                continue;
+            }
+            return Some(sector::find(&self.sectors, &sector, x, y));
+        }
+        Option::None
     }
 
     fn build_sector_lines(&mut self, index: usize) {

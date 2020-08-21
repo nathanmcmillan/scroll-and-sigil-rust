@@ -3,6 +3,7 @@ use crate::map::triangle::Triangle;
 use crate::math::vector::Vector2;
 
 pub struct Sector {
+    pub index: usize,
     pub bottom: f32,
     pub floor: f32,
     pub ceiling: f32,
@@ -28,6 +29,7 @@ impl Sector {
         lines: Vec<Line>,
     ) -> Self {
         Sector {
+            index: 0,
             bottom,
             floor,
             ceiling,
@@ -62,18 +64,6 @@ impl Sector {
         }
         odd
     }
-    // pub fn find(&self, x: f32, y: f32) -> Option<Rc<Sector>> {
-    //     for sec in self.inside.iter() {
-    //         if sec.contains(x, y) {
-    //             let nested = sec.find(x, y);
-    //             if nested.is_some() {
-    //                 return nested;
-    //             }
-    //             return Some(sec.clone());
-    //         }
-    //     }
-    //     Option::None
-    // }
     pub fn has_floor(&self) -> bool {
         self.floor_texture >= 0
     }

@@ -1,4 +1,5 @@
 pub mod app;
+pub mod network;
 pub mod run;
 pub mod webgl;
 
@@ -11,6 +12,7 @@ use wasm_bindgen::JsCast;
 use web_sys::console;
 use web_sys::Document;
 use web_sys::HtmlCanvasElement;
+use web_sys::KeyboardEvent;
 use web_sys::MouseEvent;
 use web_sys::WebGl2RenderingContext;
 use web_sys::Window;
@@ -75,8 +77,19 @@ fn console_panic_hook() {
 #[cfg(not(feature = "console_error_panic_hook"))]
 pub fn console_panic_hook() {}
 
+fn keyboard(app: &mut App, code: String, event: bool) {
+    match code.as_ref() {
+        "KeyW" => (),
+        "ArrowLeft" => app.input.look_left = event,
+        "ArrowRight" => app.input.look_right = event,
+        "ArrowUp" => app.input.look_up = event,
+        "ArrowDown" => app.input.look_down = event,
+        _ => (),
+    }
+}
+
 #[wasm_bindgen(start)]
-pub fn main() -> Result<(), JsValue> {
+pub async fn main() -> Result<(), JsValue> {
     print("scroll and sigil");
     console_panic_hook();
 
@@ -87,6 +100,14 @@ pub fn main() -> Result<(), JsValue> {
     let context = webgl_context(&canvas)?;
     let document = Rc::new(document);
     let context = Rc::new(context);
+    let app = App::new(context.clone());
+    let app = Rc::new(RefCell::new(app));
+    {
+        let mut app = app.borrow_mut();
+        let init = app.initialize();
+        init.await?;
+        app.resize(width, height);
+    }
     {
         let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
             print("mouse down!");
@@ -95,33 +116,43 @@ pub fn main() -> Result<(), JsValue> {
         closure.forget();
     }
     {
-        let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
-            print("key down!");
+        let app = app.clone();
+        let closure = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+            let code = event.code();
+            let mut app = app.borrow_mut();
+            keyboard(&mut app, code, true);
         }) as Box<dyn FnMut(_)>);
         document.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-    let mut app = App::new(context.clone());
-    app.initialize()?;
-    app.resize(width, height);
-    // {
-    //     let closure = Closure::wrap(Box::new(move || {
-    //         let (width, height) = dimensions(&get_window());
-    //         print("resize!");
-    //         app.resize(width, height);
-    //     }) as Box<dyn FnMut()>);
-    //     window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
-    //     closure.forget();
-    // }
+    {
+        let app = app.clone();
+        let closure = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+            let code = event.code();
+            let mut app = app.borrow_mut();
+            keyboard(&mut app, code, false);
+        }) as Box<dyn FnMut(_)>);
+        document.add_event_listener_with_callback("keyup", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let app = app.clone();
+        let closure = Closure::wrap(Box::new(move || {
+            let window = web_sys::window().unwrap();
+            let (width, height) = dimensions(&window);
+            app.borrow_mut().resize(width, height);
+        }) as Box<dyn FnMut()>);
+        window.add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
     {
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            tick(&mut app);
+            tick(&mut app.borrow_mut());
             request_animation_frame(f.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
         request_animation_frame(g.borrow().as_ref().unwrap());
     }
-
     Ok(())
 }

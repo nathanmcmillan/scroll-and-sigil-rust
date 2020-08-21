@@ -1,6 +1,7 @@
 use sigil::map::line::Line;
 use sigil::map::sector::Sector;
 use sigil::math::vector::Vector2;
+use sigil::things::thing::Thing;
 use sigil::world::world::World;
 
 const SECTOR_NO_SURFACE: i32 = -1;
@@ -34,7 +35,7 @@ fn place_house(world: &mut World, x: f32, y: f32) {
     let ceiling: f32 = 10.0;
     let top: f32 = 0.0;
     let sector = Sector::new(bottom, floor, ceiling, top, TEXTURE_GRASS, SECTOR_NO_SURFACE, vecs, lines);
-    world.push_sector(sector);
+    world.add_sector(sector);
 }
 
 fn place_grass(world: &mut World) {
@@ -49,12 +50,18 @@ fn place_grass(world: &mut World) {
     let ceiling: f32 = 10.0;
     let top: f32 = 0.0;
     let sector = Sector::new(bottom, floor, ceiling, top, TEXTURE_GRASS, SECTOR_NO_SURFACE, vecs, lines);
-    world.push_sector(sector);
+    world.add_sector(sector);
+}
+
+fn place_hero(world: &mut World, x: f32, y: f32) {
+    let thing = Thing::new(world, x, y, 0.25, 1.76);
+    world.add_thing(thing);
 }
 
 pub fn run(world: &mut World) {
     place_grass(world);
     place_house(world, 10.0, 10.0);
-    place_house(world, 35.0, 10.0);
+    place_house(world, 40.0, 60.0);
     world.build();
+    place_hero(world, 10.0, 40.0);
 }
