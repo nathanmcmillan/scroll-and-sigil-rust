@@ -1,80 +1,96 @@
 use crate::network;
-use crate::run;
 use crate::webgl;
 use crate::webgl::buffer::WebGlRenderBuffer;
 use crate::webgl::system::WebGlRenderSystem;
 use crate::webgl::texture::Texture;
-use sigil::game::camera::Camera;
-use sigil::io::input::Input;
+use sigil::game::game::Game;
 use sigil::map::sector::Sector;
 use sigil::math::matrix;
+use sigil::render::render;
 use sigil::world;
-use sigil::world::world::World;
+use std::collections::HashMap;
 use std::rc::Rc;
 use web_sys::console;
 use web_sys::WebGl2RenderingContext;
 use web_sys::WebGl2RenderingContext as GL;
 
 pub struct App {
-    pub input: Input,
     context: Rc<WebGl2RenderingContext>,
     width: i32,
     height: i32,
-    world: World,
     system: WebGlRenderSystem,
-    buffer: WebGlRenderBuffer,
+    buffer_gui: WebGlRenderBuffer,
+    sector_buffers: HashMap<usize, WebGlRenderBuffer>,
     textures: Vec<Texture>,
-    camera: Camera,
     orthographic: [f32; 16],
     perspective: [f32; 16],
+    game: Game,
 }
 
-fn print(s: &'static str) {
-    console::log_1(&s.into());
+fn texture_to_sector_buffer<'b>(buffers: &'b mut HashMap<usize, WebGlRenderBuffer>, system: &WebGlRenderSystem, texture: i32) -> &'b mut WebGlRenderBuffer {
+    let texture = texture as usize;
+    let buffer = buffers.entry(texture).or_insert_with(|| {
+        let mut buffer = WebGlRenderBuffer::new(3, 0, 2, 3, 0, 4 * 800, 36 * 800);
+        system.make_vao(&mut buffer);
+        buffer
+    });
+    buffer
 }
 
-fn sector_render(buffer: &mut WebGlRenderBuffer, sector: &Sector) {
+fn sector_render(sector: &Sector, buffers: &mut HashMap<usize, WebGlRenderBuffer>, system: &WebGlRenderSystem) {
     for line in sector.lines.iter() {
         if let Some(wall) = &line.top {
+            let buffer = texture_to_sector_buffer(buffers, system, wall.texture);
             world::render::wall(&mut buffer.buffer, wall);
         }
         if let Some(wall) = &line.middle {
+            let buffer = texture_to_sector_buffer(buffers, system, wall.texture);
             world::render::wall(&mut buffer.buffer, wall);
         }
         if let Some(wall) = &line.bottom {
+            let buffer = texture_to_sector_buffer(buffers, system, wall.texture);
             world::render::wall(&mut buffer.buffer, wall);
         }
     }
     for triangle in sector.triangles.iter() {
+        let buffer = texture_to_sector_buffer(buffers, system, triangle.texture);
         world::render::triangle(&mut buffer.buffer, triangle);
     }
 }
 
 impl App {
     pub fn new(context: Rc<WebGl2RenderingContext>) -> Self {
-        let mut world = World::new();
-        run::run(&mut world);
         let system = WebGlRenderSystem::new(context.clone());
-        let buffer = WebGlRenderBuffer::new(3, 0, 2, 3, 0, 4 * 800, 36 * 800);
+        let buffer_gui = WebGlRenderBuffer::new(2, 4, 2, 0, 0, 4 * 800, 36 * 800);
         App {
             context,
             width: 0,
             height: 0,
-            world,
             system,
-            buffer,
+            buffer_gui,
+            sector_buffers: HashMap::new(),
             textures: Vec::new(),
-            camera: Camera::new(0.0, 0.0, 0.0, 0.0, 0.0, 6.0),
             orthographic: [0.0; 16],
             perspective: [0.0; 16],
-            input: Input::new(),
+            game: Game::new(),
+        }
+    }
+
+    pub fn keyboard(&mut self, code: String, down: bool) {
+        match code.as_ref() {
+            "KeyW" => (),
+            "ArrowLeft" => self.game.input.look_left = down,
+            "ArrowRight" => self.game.input.look_right = down,
+            "ArrowUp" => self.game.input.look_up = down,
+            "ArrowDown" => self.game.input.look_down = down,
+            _ => (),
         }
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.width = width as i32;
         self.height = height as i32;
-        print("resize!");
+        console::log_1(&"resize!".into());
         matrix::orthographic(&mut self.orthographic, 0.0, width as f32, 0.0, height as f32, 0.0, 1.0);
         let fov = 60.0;
         let ratio = width as f32 / height as f32;
@@ -82,24 +98,32 @@ impl App {
         let far = 50.0;
         matrix::perspective(&mut self.perspective, fov, near, far, ratio);
     }
+
+    fn add_program(&mut self, program: &str) -> Result<(), String> {
+        let shader_code: Vec<&str> = program.split("===========================================================").collect();
+        let vertex = shader_code[0];
+        let fragment = shader_code[1].trim_start();
+        self.system.add_program(&vertex, &fragment)
+    }
+
     pub async fn initialize(&mut self) -> Result<(), String> {
         let plank = webgl::texture::load(self.context.clone(), "/textures/tiles/planks.png", GL::REPEAT);
         let baron = webgl::texture::load(self.context.clone(), "/textures/baron.png", GL::CLAMP_TO_EDGE);
-        let shader = network::get("/shaders/texture3d.glsl");
+        let color2d = network::get("/shaders/color2d.glsl");
+        let texture2d = network::get("/shaders/texture2d.glsl");
+        let texture3d = network::get("/shaders/texture3d.glsl");
 
         let plank = plank.await;
         let baron = baron.await;
-        let shader = shader.await.unwrap();
-        let shader_code: Vec<&str> = shader
-            .split("===========================================================")
-            .collect();
-        let vertex = shader_code[0];
-        let fragment = shader_code[1].trim_start();
-
+        let color2d = color2d.await.unwrap();
+        let texture2d = texture2d.await.unwrap();
+        let texture3d = texture3d.await.unwrap();
         self.textures.push(plank);
         self.textures.push(baron);
 
-        self.system.make_vao(&mut self.buffer);
+        self.add_program(&texture3d)?;
+        self.add_program(&color2d)?;
+        self.add_program(&texture2d)?;
 
         let context = &self.context;
         context.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -107,60 +131,39 @@ impl App {
         context.cull_face(GL::BACK);
         context.disable(GL::BLEND);
 
-        self.system.add_program(&vertex, &fragment)?;
-        self.buffer.zero();
-        for sector in self.world.sectors.iter() {
-            sector_render(&mut self.buffer, sector);
+        // self.system.make_vao(&mut self.buffer);
+        // self.buffer.zero();
+        // self.system.update_vao(&self.buffer, GL::STATIC_DRAW);
+
+        for sector in self.game.world.sectors.iter() {
+            sector_render(sector, &mut self.sector_buffers, &self.system);
         }
-        self.system.update_vao(&self.buffer, GL::STATIC_DRAW);
+
+        for (_, buffer) in &self.sector_buffers {
+            self.system.update_vao(&buffer, GL::STATIC_DRAW);
+        }
+
+        self.system.make_vao(&mut self.buffer_gui);
+        self.buffer_gui.zero();
+        render::image(&mut self.buffer_gui.buffer, 0.0, 0.0, 64.0, 64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0);
+        self.system.update_vao(&self.buffer_gui, GL::STATIC_DRAW);
+
         Ok(())
     }
 
     pub fn update(&mut self) {
-        self.world.update();
-
-        let input = &self.input;
-        let camera = &mut self.camera;
-        if input.look_left {
-            print("left!");
-            camera.ry -= 0.05;
-            if camera.ry < 0.0 {
-                camera.ry += 2.0 * std::f32::consts::PI;
-            }
-        }
-        if input.look_right {
-            print("right!");
-            camera.ry += 0.05;
-            if camera.ry >= 2.0 * std::f32::consts::PI {
-                camera.ry -= 2.0 * std::f32::consts::PI;
-            }
-        }
-        if input.look_up {
-            print("up!");
-            camera.rx -= 0.05;
-            if camera.rx < 0.0 {
-                camera.rx += 2.0 * std::f32::consts::PI;
-            }
-        }
-        if input.look_down {
-            print("down!");
-            camera.rx += 0.05;
-            if camera.rx >= 2.0 * std::f32::consts::PI {
-                camera.rx -= 2.0 * std::f32::consts::PI;
-            }
-        }
-        let target = &self.world.things[0];
-        camera.update_orbit(target);
+        self.game.update();
     }
 
-    pub fn world_render(&mut self) {
+    fn render_world(&mut self) {
         let context = &self.context;
         let system = &mut self.system;
+        system.use_program(0);
         context.enable(GL::CULL_FACE);
         context.enable(GL::DEPTH_TEST);
         system.update_view(0, 0, self.width, self.height);
         context.clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT);
-        let camera = &self.camera;
+        let camera = &self.game.camera;
         let mut view = [0.0; 16];
         let mut view_projection = [0.0; 16];
         matrix::identity(&mut view);
@@ -168,17 +171,32 @@ impl App {
         matrix::rotate_y(&mut view, camera.ry.sin(), camera.ry.cos());
         matrix::translate(&mut view, -camera.x, -camera.y, -camera.z);
         matrix::multiply(&mut view_projection, &self.perspective, &view);
-        system.use_program(0);
+        system.update_uniform_matrix("u_mvp", &view_projection);
+        for (index, buffer) in &self.sector_buffers {
+            let index = *index;
+            system.bind_texture(GL::TEXTURE0, &self.textures[index].texture);
+            system.bind_and_draw(&buffer);
+        }
+    }
+
+    fn render_gui(&mut self) {
+        let context = &self.context;
+        let system = &mut self.system;
+        system.use_program(2);
+        context.disable(GL::CULL_FACE);
+        context.disable(GL::DEPTH_TEST);
+        system.update_view(0, 0, self.width, self.height);
+        let mut view = [0.0; 16];
+        let mut view_projection = [0.0; 16];
+        matrix::identity(&mut view);
+        matrix::multiply(&mut view_projection, &self.orthographic, &view);
+        system.update_uniform_matrix("u_mvp", &view_projection);
         system.bind_texture(GL::TEXTURE0, &self.textures[0].texture);
-        system.bind_and_draw(&self.buffer);
+        system.bind_and_draw(&self.buffer_gui);
     }
 
     pub fn render(&mut self) {
-        self.world_render();
-        let context = &self.context;
-        context.clear_color(0.0, 0.0, 0.0, 1.0);
-        context.clear(GL::COLOR_BUFFER_BIT);
-        let vertices = 9;
-        context.draw_arrays(GL::TRIANGLES, 0, (vertices / 3) as i32);
+        self.render_world();
+        self.render_gui();
     }
 }

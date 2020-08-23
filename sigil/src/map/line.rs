@@ -1,9 +1,6 @@
-use crate::map::sector::Sector;
 use crate::map::wall::Wall;
 use crate::math::util::float_zero;
 use crate::math::vector::Vector2;
-
-use std::rc::Weak;
 
 pub struct Intersect {
     pub x: f32,
@@ -12,45 +9,32 @@ pub struct Intersect {
 }
 
 pub struct Line {
-    pub bottom: Option<Wall>,
-    pub middle: Option<Wall>,
-    pub top: Option<Wall>,
     pub a: Vector2,
     pub b: Vector2,
     pub normal: Vector2,
-    pub plus: Option<Weak<Sector>>,
-    pub minus: Option<Weak<Sector>>,
+    pub top: Option<Wall>,
+    pub middle: Option<Wall>,
+    pub bottom: Option<Wall>,
+    pub plus: Option<usize>,
+    pub minus: Option<usize>,
 }
 
 impl Line {
     pub fn new(low: i32, mid: i32, up: i32, a: Vector2, b: Vector2) -> Self {
-        let mut bottom = Option::None;
-        let mut middle = Option::None;
-        let mut top = Option::None;
-        if low >= 0 {
-            bottom = Some(Wall::new(a, b, low))
-        }
-        if mid >= 0 {
-            middle = Some(Wall::new(a, b, mid))
-        }
-        if up >= 0 {
-            top = Some(Wall::new(a, b, up))
-        }
         Line {
-            bottom,
-            middle,
-            top,
             a,
             b,
             normal: a.normal(b),
+            top: if up >= 0 { Some(Wall::new(a, b, up)) } else { Option::None },
+            middle: if mid >= 0 { Some(Wall::new(a, b, mid)) } else { Option::None },
+            bottom: if low >= 0 { Some(Wall::new(a, b, low)) } else { Option::None },
             plus: Option::None,
             minus: Option::None,
         }
     }
-    pub fn update_sectors(&self) {
-        // TODO
-        // self.plus = Some(plus);
-        // self.minus = Some(minus);
+    pub fn update_sectors(&mut self, plus: Option<usize>, minus: Option<usize>) {
+        self.plus = plus;
+        self.minus = minus;
     }
     pub fn intersect(&self, with: &Line) -> Intersect {
         let a1: f32 = self.b.y - self.a.y;

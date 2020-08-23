@@ -13,17 +13,17 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    pub fn new(a: Vector2, b: Vector2, c: Vector2, height: f32, texture: i32) -> Self {
+    pub fn new(height: f32, texture: i32, a: Vector2, b: Vector2, c: Vector2, floor: bool, scale: f32) -> Self {
         Triangle {
             height,
+            texture,
             a,
             b,
             c,
-            texture,
-            uva: Vector2::default(),
-            uvb: Vector2::default(),
-            uvc: Vector2::default(),
-            normal: 0.0,
+            uva: Vector2::new(a.x * scale, a.y * scale),
+            uvb: Vector2::new(b.x * scale, b.y * scale),
+            uvc: Vector2::new(c.x * scale, c.y * scale),
+            normal: if floor { 1.0 } else { -1.0 },
         }
     }
 }

@@ -1,6 +1,5 @@
 pub mod app;
 pub mod network;
-pub mod run;
 pub mod webgl;
 
 use app::App;
@@ -61,6 +60,10 @@ fn request_animation_frame(function: &Closure<dyn FnMut()>) {
         .unwrap();
 }
 
+fn keyboard(app: &mut App, code: String, down: bool) {
+    app.keyboard(code, down);
+}
+
 fn tick(app: &mut App) {
     app.update();
     app.render();
@@ -76,17 +79,6 @@ fn console_panic_hook() {
 
 #[cfg(not(feature = "console_error_panic_hook"))]
 pub fn console_panic_hook() {}
-
-fn keyboard(app: &mut App, code: String, event: bool) {
-    match code.as_ref() {
-        "KeyW" => (),
-        "ArrowLeft" => app.input.look_left = event,
-        "ArrowRight" => app.input.look_right = event,
-        "ArrowUp" => app.input.look_up = event,
-        "ArrowDown" => app.input.look_down = event,
-        _ => (),
-    }
-}
 
 #[wasm_bindgen(start)]
 pub async fn main() -> Result<(), JsValue> {

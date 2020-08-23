@@ -28,4 +28,12 @@ impl Wall {
             t: 0.0,
         }
     }
+    pub fn update(&mut self, floor: f32, ceiling: f32, u: f32, v: f32, s: f32, t: f32) {
+        self.floor = floor;
+        self.ceiling = ceiling;
+        self.u = u;
+        self.v = v;
+        self.s = s;
+        self.t = t;
+    }
 }

@@ -29,11 +29,16 @@ pub fn program(context: &WebGl2RenderingContext, vertex: &str, fragment: &str) -
     context.attach_shader(&program, &fragment);
     context.link_program(&program);
     let ok = context.get_program_parameter(&program, GL::LINK_STATUS).as_bool().unwrap_or(false);
-    if ok {
-        Ok(program)
-    } else {
-        Err(context
+    if !ok {
+        return Err(context
             .get_program_info_log(&program)
-            .unwrap_or_else(|| String::from("Unknown error creating program object")))
+            .unwrap_or_else(|| String::from("Unknown error creating program object")));
     }
+    context.delete_shader(Some(&vertex));
+    context.delete_shader(Some(&fragment));
+    context.use_program(Some(&program));
+    let texture = context.get_uniform_location(&program, "u_texture");
+    context.uniform1i(texture.as_ref(), 0);
+    context.use_program(Option::None);
+    Ok(program)
 }

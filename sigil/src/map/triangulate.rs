@@ -45,10 +45,7 @@ fn polygon_remove_point(polygons: &mut Vec<Rc<RefCell<Polygon>>>, point: Vector2
     }
 }
 
-fn polygon_find(
-    polygons: &Vec<Rc<RefCell<Polygon>>>,
-    point: Vector2,
-) -> Option<Rc<RefCell<Polygon>>> {
+fn polygon_find(polygons: &Vec<Rc<RefCell<Polygon>>>, point: Vector2) -> Option<Rc<RefCell<Polygon>>> {
     for polygon in polygons.iter() {
         if point.eq(polygon.borrow().point) {
             return Some(polygon.clone());
@@ -292,12 +289,7 @@ fn skip(sector: &Sector, floor: bool) -> bool {
     !sector.has_ceiling()
 }
 
-fn populate(
-    sectors: &mut Vec<Sector>,
-    sector: usize,
-    floor: bool,
-    mut polygons: &mut Vec<Rc<RefCell<Polygon>>>,
-) {
+fn populate(sectors: &mut Vec<Sector>, sector: usize, floor: bool, mut polygons: &mut Vec<Rc<RefCell<Polygon>>>) {
     let sector = &sectors[sector];
     for inner in sector.inside.iter().copied() {
         let inner = &sectors[inner];
@@ -390,13 +382,7 @@ fn classify(polygons: &Vec<Rc<RefCell<Polygon>>>, monotone: &mut Vec<Rc<RefCell<
     }
 }
 
-fn clip(
-    sec: &Sector,
-    floor: bool,
-    scale: f32,
-    triangles: &mut Vec<Triangle>,
-    vecs: &mut Vec<Vector2>,
-) {
+fn clip(sec: &Sector, floor: bool, scale: f32, triangles: &mut Vec<Triangle>, vecs: &mut Vec<Vector2>) {
     let mut i = 0;
     let mut size = vecs.len();
     while size > 3 {
@@ -408,21 +394,9 @@ fn clip(
         if triangle_valid(vecs, previous, current, next) {
             let tri;
             if floor {
-                tri = Triangle::new(
-                    previous.mul(scale),
-                    current.mul(scale),
-                    next.mul(scale),
-                    sec.floor,
-                    sec.floor_texture,
-                );
+                tri = Triangle::new(sec.floor, sec.floor_texture, previous, current, next, floor, scale);
             } else {
-                tri = Triangle::new(
-                    next.mul(scale),
-                    current.mul(scale),
-                    previous.mul(scale),
-                    sec.ceiling,
-                    sec.ceiling_texture,
-                );
+                tri = Triangle::new(sec.ceiling, sec.ceiling_texture, next, current, previous, floor, scale);
             }
             triangles.push(tri);
             vecs.remove(i);
@@ -436,32 +410,14 @@ fn clip(
     }
     let tri;
     if floor {
-        tri = Triangle::new(
-            vecs[0].mul(scale),
-            vecs[1].mul(scale),
-            vecs[2].mul(scale),
-            sec.floor,
-            sec.floor_texture,
-        );
+        tri = Triangle::new(sec.floor, sec.floor_texture, vecs[0], vecs[1], vecs[2], floor, scale);
     } else {
-        tri = Triangle::new(
-            vecs[2].mul(scale),
-            vecs[1].mul(scale),
-            vecs[0].mul(scale),
-            sec.ceiling,
-            sec.ceiling_texture,
-        );
+        tri = Triangle::new(sec.ceiling, sec.ceiling_texture, vecs[2], vecs[1], vecs[0], floor, scale);
     }
     triangles.push(tri);
 }
 
-fn clip_all(
-    sec: &Sector,
-    floor: bool,
-    scale: f32,
-    monotone: &Vec<Rc<RefCell<Polygon>>>,
-    triangles: &mut Vec<Triangle>,
-) {
+fn clip_all(sec: &Sector, floor: bool, scale: f32, monotone: &Vec<Rc<RefCell<Polygon>>>, triangles: &mut Vec<Triangle>) {
     let mut vecs = Vec::new();
     for start in monotone.iter() {
         let mut next = start.borrow().next[0].clone();
@@ -506,13 +462,7 @@ fn clip_all(
     }
 }
 
-fn construct(
-    sectors: &mut Vec<Sector>,
-    sector: usize,
-    floor: bool,
-    scale: f32,
-    triangles: &mut Vec<Triangle>,
-) {
+fn construct(sectors: &mut Vec<Sector>, sector: usize, floor: bool, scale: f32, triangles: &mut Vec<Triangle>) {
     if skip(&sectors[sector], floor) {
         return;
     }

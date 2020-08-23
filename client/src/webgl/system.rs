@@ -1,6 +1,5 @@
 use crate::webgl;
 use crate::webgl::buffer::WebGlRenderBuffer;
-use std::mem;
 use std::rc::Rc;
 use web_sys::WebGl2RenderingContext;
 use web_sys::WebGl2RenderingContext as GL;
@@ -37,35 +36,34 @@ impl WebGlRenderSystem {
         let context = &self.context;
         let mut index = 0;
         let mut offset = 0;
-        let bytes = mem::size_of::<f32>();
         let buffer = &b.buffer;
-        let stride = (buffer.position + buffer.color + buffer.texture + buffer.normal + buffer.bone) as i32;
+        let stride = 4 * (buffer.position + buffer.color + buffer.texture + buffer.normal + buffer.bone) as i32;
         if buffer.position > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.position as i32, GL::FLOAT, false, stride, (offset * bytes) as i32);
+            context.vertex_attrib_pointer_with_i32(index, buffer.position as i32, GL::FLOAT, false, stride, 0);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.position;
+            offset += buffer.position as i32;
         }
         if buffer.color > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.color as i32, GL::FLOAT, false, stride, (offset * bytes) as i32);
+            context.vertex_attrib_pointer_with_i32(index, buffer.color as i32, GL::FLOAT, false, stride, offset * 4);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.color;
+            offset += buffer.color as i32;
         }
         if buffer.texture > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.texture as i32, GL::FLOAT, false, stride, (offset * bytes) as i32);
+            context.vertex_attrib_pointer_with_i32(index, buffer.texture as i32, GL::FLOAT, false, stride, offset * 4);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.texture;
+            offset += buffer.texture as i32;
         }
         if buffer.normal > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.normal as i32, GL::FLOAT, false, stride, (offset * bytes) as i32);
+            context.vertex_attrib_pointer_with_i32(index, buffer.normal as i32, GL::FLOAT, false, stride, offset * 4);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.normal;
+            offset += buffer.normal as i32;
         }
         if buffer.bone > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.bone as i32, GL::FLOAT, false, stride, (offset * bytes) as i32);
+            context.vertex_attrib_pointer_with_i32(index, buffer.bone as i32, GL::FLOAT, false, stride, offset * 4);
             context.enable_vertex_attrib_array(index);
         }
         context.bind_vertex_array(Option::None);
@@ -87,6 +85,11 @@ impl WebGlRenderSystem {
     pub fn bind_texture(&self, active: u32, texture: &WebGlTexture) {
         self.context.active_texture(active);
         self.context.bind_texture(GL::TEXTURE_2D, Some(texture));
+    }
+
+    pub fn update_uniform_matrix(&self, name: &str, matrix: &[f32]) {
+        let location = self.context.get_uniform_location(&self.programs[self.program], name);
+        self.context.uniform_matrix4fv_with_f32_array(location.as_ref(), false, matrix);
     }
 
     pub fn update_view(&self, x: i32, y: i32, width: i32, height: i32) {

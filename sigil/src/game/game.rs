@@ -1,13 +1,21 @@
-use sigil::map::line::Line;
-use sigil::map::sector::Sector;
-use sigil::math::vector::Vector2;
-use sigil::things::thing::Thing;
-use sigil::world::world::World;
+use crate::game::camera::Camera;
+use crate::io::input::Input;
+use crate::map::line::Line;
+use crate::map::sector::Sector;
+use crate::math::vector::Vector2;
+use crate::things::thing::Thing;
+use crate::world::world::World;
 
 const SECTOR_NO_SURFACE: i32 = -1;
 const LINE_NO_WALL: i32 = -1;
 const TEXTURE_GRASS: i32 = 0;
 const TEXTURE_STONE: i32 = 1;
+
+pub struct Game {
+    pub input: Input,
+    pub world: World,
+    pub camera: Camera,
+}
 
 fn place_house(world: &mut World, x: f32, y: f32) {
     const COUNT: usize = 12;
@@ -58,10 +66,54 @@ fn place_hero(world: &mut World, x: f32, y: f32) {
     world.add_thing(thing);
 }
 
-pub fn run(world: &mut World) {
+fn place(world: &mut World) {
     place_grass(world);
     place_house(world, 10.0, 10.0);
     place_house(world, 40.0, 60.0);
     world.build();
     place_hero(world, 10.0, 40.0);
+}
+
+impl Game {
+    pub fn new() -> Self {
+        let mut world = World::new();
+        place(&mut world);
+        Game {
+            world,
+            camera: Camera::new(0.0, 0.0, 0.0, 0.0, 0.0, 6.0),
+            input: Input::new(),
+        }
+    }
+    pub fn update(&mut self) {
+        self.world.update();
+
+        let input = &self.input;
+        let camera = &mut self.camera;
+        if input.look_left {
+            camera.ry -= 0.05;
+            if camera.ry < 0.0 {
+                camera.ry += 2.0 * std::f32::consts::PI;
+            }
+        }
+        if input.look_right {
+            camera.ry += 0.05;
+            if camera.ry >= 2.0 * std::f32::consts::PI {
+                camera.ry -= 2.0 * std::f32::consts::PI;
+            }
+        }
+        if input.look_up {
+            camera.rx -= 0.05;
+            if camera.rx < 0.0 {
+                camera.rx += 2.0 * std::f32::consts::PI;
+            }
+        }
+        if input.look_down {
+            camera.rx += 0.05;
+            if camera.rx >= 2.0 * std::f32::consts::PI {
+                camera.rx -= 2.0 * std::f32::consts::PI;
+            }
+        }
+        let target = &self.world.things[0];
+        camera.update_orbit(target);
+    }
 }

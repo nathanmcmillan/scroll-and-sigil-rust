@@ -14,12 +14,70 @@ pub struct WorldCell {
     pub lines: Vec<Line>,
 }
 
+impl WorldCell {
+    fn add_line(&mut self, line: &Line) {}
+}
+
 pub struct World {
     pub things: Vec<Thing>,
     pub sectors: Vec<Sector>,
     pub cells: Vec<WorldCell>,
     pub cell_columns: usize,
     pub cell_rows: usize,
+}
+
+fn build_cell_lines(cells: &mut Vec<WorldCell>, cell_columns: usize, sector: &Sector, line: &mut Line) {
+    let dx = (line.b.x - line.a.x).abs();
+    let dy = (line.b.y - line.a.y).abs();
+
+    let mut x = line.a.x.floor() as i32;
+    let mut y = line.a.y.floor() as i32;
+
+    let mut n = 1;
+    let mut error;
+    let x_inc;
+    let y_inc;
+
+    if dx == 0.0 {
+        x_inc = 0;
+        error = std::f32::MAX;
+    } else if line.b.x > line.a.x {
+        x_inc = 1;
+        n += (line.b.x).floor() as i32 - x;
+        error = (line.a.x.floor() + 1.0 - line.a.x) * dy;
+    } else {
+        x_inc = -1;
+        n += x - line.b.x.floor() as i32;
+        error = (line.a.x - line.a.x.floor()) * dy;
+    }
+
+    if dy == 0.0 {
+        y_inc = 0;
+        error = std::f32::MIN;
+    } else if line.b.y > line.a.y {
+        y_inc = 1;
+        n += (line.b.y).floor() as i32 - y;
+        error -= (line.a.y.floor() + 1.0 - line.a.y) * dx;
+    } else {
+        y_inc = -1;
+        n += y - line.b.y.floor() as i32;
+        error -= (line.a.y - line.a.y.floor()) * dx;
+    }
+
+    while n > 0 {
+        let c = &mut cells[(x as usize >> WORLD_CELL_SHIFT) + (y as usize >> WORLD_CELL_SHIFT) * cell_columns];
+        c.add_line(line);
+
+        if error > 0.0 {
+            y += y_inc;
+            error -= dx;
+        } else {
+            x += x_inc;
+            error += dy;
+        }
+
+        n -= 1;
+    }
 }
 
 impl World {
@@ -51,11 +109,47 @@ impl World {
         }
         Option::None
     }
-
-    fn build_sector_lines(&mut self, index: usize) {
-        let sector = &self.sectors[index];
-        if sector.lines.len() == 0 {
+    fn build_lines(&mut self, index: usize) {
+        let sector = &mut self.sectors[index];
+        let lines = sector.lines.len();
+        if lines == 0 {
             return;
+        }
+
+        let bottom = sector.bottom;
+        let floor = sector.floor;
+        let ceil = sector.ceiling;
+        let top = sector.top;
+
+        let plus;
+        let minus;
+
+        if sector.outside.is_none() {
+            plus = Option::None;
+            minus = Some(sector.index);
+        } else {
+            plus = Some(sector.index);
+            minus = sector.outside;
+        }
+
+        let mut u = 0.0;
+        for i in 0..lines {
+            let line = &mut sector.lines[i];
+            build_cell_lines(&mut self.cells, self.cell_columns, sector, line);
+            line.update_sectors(plus, minus);
+            let x = line.a.x - line.b.x;
+            let y = line.a.y - line.b.y;
+            let s = u + (x * x + y * y).sqrt() * WORLD_SCALE;
+            if let Some(wall) = &mut line.bottom {
+                wall.update(bottom, floor, u, bottom * WORLD_SCALE, s, floor * WORLD_SCALE);
+            }
+            if let Some(wall) = &mut line.middle {
+                wall.update(floor, ceil, u, floor * WORLD_SCALE, s, ceil * WORLD_SCALE);
+            }
+            if let Some(wall) = &mut line.top {
+                wall.update(ceil, top, u, ceil * WORLD_SCALE, s, top * WORLD_SCALE);
+            }
+            u = s;
         }
     }
 
@@ -139,7 +233,7 @@ impl World {
             triangulate_sector(&mut self.sectors, s, WORLD_SCALE);
         }
         for i in 0..self.sectors.len() {
-            self.build_sector_lines(i);
+            self.build_lines(i);
         }
     }
 
