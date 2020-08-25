@@ -165,13 +165,13 @@ impl App {
         context.clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT);
         let camera = &self.game.camera;
         let mut view = [0.0; 16];
-        let mut view_projection = [0.0; 16];
+        let mut projection = [0.0; 16];
         matrix::identity(&mut view);
         matrix::rotate_x(&mut view, camera.rx.sin(), camera.rx.cos());
         matrix::rotate_y(&mut view, camera.ry.sin(), camera.ry.cos());
         matrix::translate(&mut view, -camera.x, -camera.y, -camera.z);
-        matrix::multiply(&mut view_projection, &self.perspective, &view);
-        system.update_uniform_matrix("u_mvp", &view_projection);
+        matrix::multiply(&mut projection, &self.perspective, &view);
+        system.update_uniform_matrix("u_mvp", &projection);
         for (index, buffer) in &self.sector_buffers {
             let index = *index;
             system.bind_texture(GL::TEXTURE0, &self.textures[index].texture);

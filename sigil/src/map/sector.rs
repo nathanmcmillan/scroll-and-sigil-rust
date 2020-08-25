@@ -18,17 +18,8 @@ pub struct Sector {
 }
 
 impl Sector {
-    pub fn new(
-        bottom: f32,
-        floor: f32,
-        ceiling: f32,
-        top: f32,
-        floor_texture: i32,
-        ceiling_texture: i32,
-        vecs: Vec<Vector2>,
-        lines: Vec<Line>,
-    ) -> Self {
-        Sector {
+    pub fn new(bottom: f32, floor: f32, ceiling: f32, top: f32, floor_texture: i32, ceiling_texture: i32, vecs: Vec<Vector2>, lines: Vec<Line>) -> Self {
+        let mut sector = Sector {
             index: 0,
             bottom,
             floor,
@@ -41,7 +32,11 @@ impl Sector {
             triangles: Vec::new(),
             inside: Vec::new(),
             outside: Option::None,
+        };
+        for i in 0..sector.lines.len() {
+            sector.lines[i].index = i;
         }
+        sector
     }
     pub fn update_triangles(&mut self, triangles: Vec<Triangle>) {
         self.triangles = triangles;

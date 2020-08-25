@@ -4,19 +4,18 @@ use crate::map::sector::Sector;
 use crate::map::triangulate::triangulate_sector;
 use crate::things::thing::Thing;
 use crate::things::thing::Updatable;
-
 use std::collections::HashSet;
 
 const WORLD_SCALE: f32 = 0.25;
 const WORLD_CELL_SHIFT: i32 = 5;
 
+#[derive(Default)]
 pub struct WorldCell {
-    pub lines: Vec<Line>,
+    pub lines: Vec<usize>,
+    pub things: Vec<usize>,
 }
 
-impl WorldCell {
-    fn add_line(&mut self, line: &Line) {}
-}
+impl WorldCell {}
 
 pub struct World {
     pub things: Vec<Thing>,
@@ -26,7 +25,7 @@ pub struct World {
     pub cell_rows: usize,
 }
 
-fn build_cell_lines(cells: &mut Vec<WorldCell>, cell_columns: usize, sector: &Sector, line: &mut Line) {
+fn build_cell_lines(cells: &mut Vec<WorldCell>, cell_columns: usize, line: &Line) {
     let dx = (line.b.x - line.a.x).abs();
     let dy = (line.b.y - line.a.y).abs();
 
@@ -65,8 +64,8 @@ fn build_cell_lines(cells: &mut Vec<WorldCell>, cell_columns: usize, sector: &Se
     }
 
     while n > 0 {
-        let c = &mut cells[(x as usize >> WORLD_CELL_SHIFT) + (y as usize >> WORLD_CELL_SHIFT) * cell_columns];
-        c.add_line(line);
+        let cell = &mut cells[(x as usize >> WORLD_CELL_SHIFT) + (y as usize >> WORLD_CELL_SHIFT) * cell_columns];
+        cell.lines.push(line.index);
 
         if error > 0.0 {
             y += y_inc;
@@ -135,7 +134,7 @@ impl World {
         let mut u = 0.0;
         for i in 0..lines {
             let line = &mut sector.lines[i];
-            build_cell_lines(&mut self.cells, self.cell_columns, sector, line);
+            build_cell_lines(&mut self.cells, self.cell_columns, line);
             line.update_sectors(plus, minus);
             let x = line.a.x - line.b.x;
             let y = line.a.y - line.b.y;
@@ -228,7 +227,7 @@ impl World {
         let cell_size = (1 << WORLD_CELL_SHIFT) as f32;
         self.cell_rows = (top / cell_size).ceil() as usize;
         self.cell_columns = (right / cell_size).ceil() as usize;
-        self.cells = Vec::with_capacity(self.cell_columns * self.cell_rows);
+        self.cells.resize_with(self.cell_columns * self.cell_rows, Default::default);
         for s in 0..self.sectors.len() {
             triangulate_sector(&mut self.sectors, s, WORLD_SCALE);
         }

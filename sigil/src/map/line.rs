@@ -9,6 +9,7 @@ pub struct Intersect {
 }
 
 pub struct Line {
+    pub index: usize,
     pub a: Vector2,
     pub b: Vector2,
     pub normal: Vector2,
@@ -22,6 +23,7 @@ pub struct Line {
 impl Line {
     pub fn new(low: i32, mid: i32, up: i32, a: Vector2, b: Vector2) -> Self {
         Line {
+            index: 0,
             a,
             b,
             normal: a.normal(b),
