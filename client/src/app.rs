@@ -6,7 +6,9 @@ use crate::webgl::texture::Texture;
 use sigil::game::game::Game;
 use sigil::map::sector::Sector;
 use sigil::math::matrix;
+use sigil::math::vector::Vector3;
 use sigil::render::render;
+use sigil::render::sprite::Sprite;
 use sigil::world;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -20,6 +22,7 @@ pub struct App {
     height: i32,
     system: WebGlRenderSystem,
     buffer_gui: WebGlRenderBuffer,
+    buffer_sprites: WebGlRenderBuffer,
     sector_buffers: HashMap<usize, WebGlRenderBuffer>,
     textures: Vec<Texture>,
     orthographic: [f32; 16],
@@ -62,12 +65,14 @@ impl App {
     pub fn new(context: Rc<WebGl2RenderingContext>) -> Self {
         let system = WebGlRenderSystem::new(context.clone());
         let buffer_gui = WebGlRenderBuffer::new(2, 4, 2, 0, 0, 4 * 800, 36 * 800);
+        let buffer_sprites = WebGlRenderBuffer::new(3, 0, 2, 3, 0, 4 * 800, 36 * 800);
         App {
             context,
             width: 0,
             height: 0,
             system,
             buffer_gui,
+            buffer_sprites,
             sector_buffers: HashMap::new(),
             textures: Vec::new(),
             orthographic: [0.0; 16],
@@ -143,6 +148,8 @@ impl App {
             self.system.update_vao(&buffer, GL::STATIC_DRAW);
         }
 
+        self.system.make_vao(&mut self.buffer_sprites);
+
         self.system.make_vao(&mut self.buffer_gui);
         self.buffer_gui.zero();
         render::image(&mut self.buffer_gui.buffer, 0.0, 0.0, 64.0, 64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0);
@@ -170,6 +177,9 @@ impl App {
         matrix::rotate_x(&mut view, camera.rx.sin(), camera.rx.cos());
         matrix::rotate_y(&mut view, camera.ry.sin(), camera.ry.cos());
         matrix::translate(&mut view, -camera.x, -camera.y, -camera.z);
+        // let eye = Vector3::new(0.0, 10.0, 0.0);
+        // let center = Vector3::new(2.0, 0.0, 10.0);
+        // matrix::look_at(&mut view, &eye, &center);
         matrix::multiply(&mut projection, &self.perspective, &view);
         system.update_uniform_matrix("u_mvp", &projection);
         for (index, buffer) in &self.sector_buffers {
@@ -177,6 +187,15 @@ impl App {
             system.bind_texture(GL::TEXTURE0, &self.textures[index].texture);
             system.bind_and_draw(&buffer);
         }
+        system.bind_texture(GL::TEXTURE0, &self.textures[0].texture);
+
+        let buffer = &mut self.buffer_sprites;
+        buffer.zero();
+        let sprite = Sprite::new(0, 0, 32, 32, 0, 0, 1.0, 1.0, 1.0);
+        let sine = (-camera.ry).sin();
+        let cosine = (-camera.ry).cos();
+        render::sprite(&mut buffer.buffer, 2.0, 0.0, 1.0, sprite, sine, cosine);
+        system.update_and_draw(&buffer);
     }
 
     fn render_gui(&mut self) {
@@ -187,10 +206,10 @@ impl App {
         context.disable(GL::DEPTH_TEST);
         system.update_view(0, 0, self.width, self.height);
         let mut view = [0.0; 16];
-        let mut view_projection = [0.0; 16];
+        let mut projection = [0.0; 16];
         matrix::identity(&mut view);
-        matrix::multiply(&mut view_projection, &self.orthographic, &view);
-        system.update_uniform_matrix("u_mvp", &view_projection);
+        matrix::multiply(&mut projection, &self.orthographic, &view);
+        system.update_uniform_matrix("u_mvp", &projection);
         system.bind_texture(GL::TEXTURE0, &self.textures[0].texture);
         system.bind_and_draw(&self.buffer_gui);
     }

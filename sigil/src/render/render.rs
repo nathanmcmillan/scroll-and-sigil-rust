@@ -1,4 +1,5 @@
 use crate::render::buffer::RenderBuffer;
+use crate::render::sprite::Sprite;
 
 pub fn index3(b: &mut RenderBuffer) {
     let pos = b.index_position;
@@ -126,6 +127,52 @@ pub fn image(
     vertices[pos + 29] = alpha;
     vertices[pos + 30] = left;
     vertices[pos + 31] = top;
+    b.vertex_position = pos + 32;
+    index4(b);
+}
+
+pub fn sprite(b: &mut RenderBuffer, x: f32, y: f32, z: f32, sprite: Sprite, mut sine: f32, mut cosine: f32) {
+    let pos = b.vertex_position;
+    let vertices = &mut b.vertices;
+    sine = sprite.half_width * sine;
+    cosine = sprite.half_width * cosine;
+
+    vertices[pos] = x - cosine;
+    vertices[pos + 1] = y;
+    vertices[pos + 2] = z + sine;
+    vertices[pos + 3] = sprite.left;
+    vertices[pos + 4] = sprite.bottom;
+    vertices[pos + 5] = sine;
+    vertices[pos + 6] = 0.0;
+    vertices[pos + 7] = cosine;
+
+    vertices[pos + 8] = x + cosine;
+    vertices[pos + 9] = y;
+    vertices[pos + 10] = z - sine;
+    vertices[pos + 11] = sprite.right;
+    vertices[pos + 12] = sprite.bottom;
+    vertices[pos + 13] = sine;
+    vertices[pos + 14] = 0.0;
+    vertices[pos + 15] = cosine;
+
+    vertices[pos + 16] = x + cosine;
+    vertices[pos + 17] = y + sprite.height;
+    vertices[pos + 18] = z - sine;
+    vertices[pos + 19] = sprite.right;
+    vertices[pos + 20] = sprite.top;
+    vertices[pos + 21] = sine;
+    vertices[pos + 22] = 0.0;
+    vertices[pos + 23] = cosine;
+
+    vertices[pos + 24] = x - cosine;
+    vertices[pos + 25] = y + sprite.height;
+    vertices[pos + 26] = z + sine;
+    vertices[pos + 27] = sprite.left;
+    vertices[pos + 28] = sprite.top;
+    vertices[pos + 29] = sine;
+    vertices[pos + 30] = 0.0;
+    vertices[pos + 31] = cosine;
+
     b.vertex_position = pos + 32;
     index4(b);
 }

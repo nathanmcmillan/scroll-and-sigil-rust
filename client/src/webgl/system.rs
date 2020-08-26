@@ -42,28 +42,28 @@ impl WebGlRenderSystem {
             context.vertex_attrib_pointer_with_i32(index, buffer.position as i32, GL::FLOAT, false, stride, 0);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.position as i32;
+            offset += 4 * buffer.position as i32;
         }
         if buffer.color > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.color as i32, GL::FLOAT, false, stride, offset * 4);
+            context.vertex_attrib_pointer_with_i32(index, buffer.color as i32, GL::FLOAT, false, stride, offset);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.color as i32;
+            offset += 4 * buffer.color as i32;
         }
         if buffer.texture > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.texture as i32, GL::FLOAT, false, stride, offset * 4);
+            context.vertex_attrib_pointer_with_i32(index, buffer.texture as i32, GL::FLOAT, false, stride, offset);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.texture as i32;
+            offset += 4 * buffer.texture as i32;
         }
         if buffer.normal > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.normal as i32, GL::FLOAT, false, stride, offset * 4);
+            context.vertex_attrib_pointer_with_i32(index, buffer.normal as i32, GL::FLOAT, false, stride, offset);
             context.enable_vertex_attrib_array(index);
             index += 1;
-            offset += buffer.normal as i32;
+            offset += 4 * buffer.normal as i32;
         }
         if buffer.bone > 0 {
-            context.vertex_attrib_pointer_with_i32(index, buffer.bone as i32, GL::FLOAT, false, stride, offset * 4);
+            context.vertex_attrib_pointer_with_i32(index, buffer.bone as i32, GL::FLOAT, false, stride, offset);
             context.enable_vertex_attrib_array(index);
         }
         context.bind_vertex_array(Option::None);
@@ -118,8 +118,7 @@ impl WebGlRenderSystem {
             return;
         }
         let context = &self.context;
-        context.bind_buffer(GL::ARRAY_BUFFER, b.vbo.as_ref());
-        context.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, b.ebo.as_ref());
+        context.bind_vertex_array(b.vao.as_ref());
         context.draw_elements_with_i32(GL::TRIANGLES, count, GL::UNSIGNED_INT, 0);
     }
     pub fn update_and_draw(&self, b: &WebGlRenderBuffer) {
@@ -129,5 +128,6 @@ impl WebGlRenderSystem {
         }
         self.update_vao(b, GL::DYNAMIC_DRAW);
         self.context.draw_elements_with_i32(GL::TRIANGLES, count, GL::UNSIGNED_INT, 0);
+        self.context.bind_vertex_array(Option::None);
     }
 }

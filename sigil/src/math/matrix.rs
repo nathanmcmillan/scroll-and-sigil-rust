@@ -1,3 +1,5 @@
+use crate::math::vector::Vector3;
+
 pub fn identity(matrix: &mut [f32; 16]) {
     matrix[0] = 1.0;
     matrix[1] = 0.0;
@@ -187,4 +189,34 @@ pub fn rotate_z(matrix: &mut [f32; 16], sine: f32, cosine: f32) {
     copy.copy_from_slice(matrix);
 
     multiply(matrix, &copy, &temp);
+}
+
+pub fn look_at(matrix: &mut [f32; 16], eye: &Vector3, center: &Vector3) {
+    let mut forward = Vector3::new(center.x - eye.x, center.y - eye.y, center.z - eye.z);
+    forward.normalize();
+
+    let any = Vector3::new(0.0, 1.0, 0.0);
+
+    let side = forward.cross(any);
+    let up = side.cross(forward);
+
+    matrix[0] = side.x;
+    matrix[4] = side.y;
+    matrix[8] = side.z;
+    matrix[12] = 0.0;
+
+    matrix[1] = up.x;
+    matrix[5] = up.y;
+    matrix[9] = up.z;
+    matrix[13] = 0.0;
+
+    matrix[2] = -forward.x;
+    matrix[6] = -forward.y;
+    matrix[10] = -forward.z;
+    matrix[14] = 0.0;
+
+    matrix[3] = 0.0;
+    matrix[7] = 0.0;
+    matrix[11] = 0.0;
+    matrix[15] = 1.0;
 }
