@@ -6,8 +6,8 @@ use crate::things::thing::Thing;
 use crate::things::thing::Updatable;
 use std::collections::HashSet;
 
-const WORLD_SCALE: f32 = 0.25;
-const WORLD_CELL_SHIFT: i32 = 5;
+pub const WORLD_SCALE: f32 = 0.25;
+pub const WORLD_CELL_SHIFT: i32 = 5;
 
 #[derive(Default)]
 pub struct WorldCell {
@@ -15,7 +15,11 @@ pub struct WorldCell {
     pub things: Vec<usize>,
 }
 
-impl WorldCell {}
+impl WorldCell {
+    pub fn add_thing(&mut self, thing: usize) {
+        self.things.push(thing);
+    }
+}
 
 pub struct World {
     pub things: Vec<Thing>,

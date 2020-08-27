@@ -3,7 +3,7 @@ use crate::io::input::Input;
 use crate::map::line::Line;
 use crate::map::sector::Sector;
 use crate::math::vector::Vector2;
-use crate::things::thing::Thing;
+use crate::things::hero::Hero;
 use crate::world::world::World;
 
 const SECTOR_NO_SURFACE: i32 = -1;
@@ -61,17 +61,15 @@ fn place_grass(world: &mut World) {
     world.add_sector(sector);
 }
 
-fn place_hero(world: &mut World, x: f32, y: f32) {
-    let thing = Thing::new(world, x, y, 0.25, 1.76);
-    world.add_thing(thing);
-}
-
 fn place(world: &mut World) {
     place_grass(world);
     place_house(world, 10.0, 10.0);
     place_house(world, 40.0, 60.0);
     world.build();
-    place_hero(world, 10.0, 40.0);
+    Hero::new(world, 10.0, 40.0);
+    // Baron::new(world, 8.0, 45.0);
+    // Blood::new(world, 5.0, 1.0, 30.0);
+    // Tree::new(world, 14.0, 42.0);
 }
 
 impl Game {
