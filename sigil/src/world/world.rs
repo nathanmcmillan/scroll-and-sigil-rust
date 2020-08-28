@@ -19,6 +19,15 @@ impl WorldCell {
     pub fn add_thing(&mut self, thing: usize) {
         self.things.push(thing);
     }
+    pub fn remove_thing(&mut self, thing: usize) {
+        let len = self.things.len();
+        for i in 0..len {
+            if self.things[i] == thing {
+                self.things.remove(i);
+                return;
+            }
+        }
+    }
 }
 
 pub struct World {
@@ -93,16 +102,13 @@ impl World {
             cell_rows: 0,
         }
     }
-
     pub fn add_sector(&mut self, mut sector: Sector) {
         sector.index = self.sectors.len();
         self.sectors.push(sector);
     }
-
     pub fn add_thing(&mut self, thing: Thing) {
         self.things.push(thing);
     }
-
     pub fn find_sector(&self, x: f32, y: f32) -> Option<&Sector> {
         for sector in self.sectors.iter() {
             if sector.outside.is_some() {
@@ -111,6 +117,9 @@ impl World {
             return Some(sector::find(&self.sectors, &sector, x, y));
         }
         Option::None
+    }
+    pub fn get_sector(&self, index: usize) -> &Sector {
+        &self.sectors[index]
     }
     fn build_lines(&mut self, index: usize) {
         let sector = &mut self.sectors[index];
