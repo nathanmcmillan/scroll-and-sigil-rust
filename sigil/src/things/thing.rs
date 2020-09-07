@@ -5,6 +5,7 @@ use crate::math::vector::Vector2;
 use crate::math::vector::Vector3;
 use crate::world::world::World;
 use crate::world::world::WORLD_CELL_SHIFT;
+use std::collections::HashSet;
 
 const GRAVITY: f32 = 0.028;
 const FRICTION: f32 = 0.88;
@@ -193,6 +194,51 @@ impl Thing {
             let c_max = (self.position.x + size) as i32 >> WORLD_CELL_SHIFT;
             let r_min = (self.position.z - size) as i32 >> WORLD_CELL_SHIFT;
             let r_max = (self.position.z + size) as i32 >> WORLD_CELL_SHIFT;
+
+            let mut checked = HashSet::new();
+            let mut collisions = HashSet::new();
+            for r in r_min..=r_max {
+                for c in c_min..=c_max {
+                    let cell = &world.cells[c as usize + r as usize * world.cell_columns];
+                    for thing_ref in cell.things.iter() {
+                        if checked.contains(thing_ref) {
+                            continue;
+                        }
+                        let thing_index = *thing_ref;
+                        let thing = &world.things[thing_index];
+                        if self.collision(thing) {
+                            collisions.insert(thing_index);
+                        }
+                        checked.insert(thing_index);
+                    }
+                }
+            }
+
+            while collisions.len() > 0 {
+                // thing *closest = NULL;
+                // float manhattan = FLT_MAX;
+                // set_iterator iter = create_set_iterator(collided);
+                // while (set_iterator_has_next(&iter)) {
+                //     thing *b = set_iterator_next(&iter);
+                //     float distance = fabs(self->previous_x - b->x) + fabs(self->previous_z - b->z);
+                //     if (distance < manhattan) {
+                //         manhattan = distance;
+                //         closest = b;
+                //     }
+                // }
+                // thing_resolve_collision(self, closest);
+                // set_remove(collided, closest);
+            }
+
+            for r in r_min..=r_max {
+                for c in c_min..=c_max {
+                    let cell = &world.cells[c as usize + r as usize * world.cell_columns];
+                    for line_ref in cell.lines.iter() {
+                        // let line = &world.lines[*line_ref];
+                        // self.line_collision(world, line);
+                    }
+                }
+            }
 
             self.add_to_cells(world);
         }
