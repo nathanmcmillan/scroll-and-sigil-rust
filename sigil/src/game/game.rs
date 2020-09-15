@@ -42,8 +42,9 @@ fn place_house(world: &mut World, x: f32, y: f32) {
     let floor: f32 = 0.0;
     let ceiling: f32 = 10.0;
     let top: f32 = 0.0;
+    let lines = world.push_lines(lines);
     let sector = Sector::new(bottom, floor, ceiling, top, TEXTURE_GRASS, SECTOR_NO_SURFACE, vecs, lines);
-    world.add_sector(sector);
+    world.push_sector(sector);
 }
 
 fn place_grass(world: &mut World) {
@@ -58,7 +59,7 @@ fn place_grass(world: &mut World) {
     let ceiling: f32 = 10.0;
     let top: f32 = 0.0;
     let sector = Sector::new(bottom, floor, ceiling, top, TEXTURE_GRASS, SECTOR_NO_SURFACE, vecs, lines);
-    world.add_sector(sector);
+    world.push_sector(sector);
 }
 
 fn place(world: &mut World) {

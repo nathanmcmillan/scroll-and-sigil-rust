@@ -58,7 +58,7 @@ impl Thing {
         let r_max = (self.position.z + size) as i32 >> WORLD_CELL_SHIFT;
         for r in r_min..=r_max {
             for c in c_min..=c_max {
-                world.cells[c as usize + r as usize * world.cell_columns].add_thing(self.index);
+                world.cells[c as usize + r as usize * world.cell_columns].push_thing(self.index);
             }
         }
         self.min.x = c_min;
@@ -234,8 +234,8 @@ impl Thing {
                 for c in c_min..=c_max {
                     let cell = &world.cells[c as usize + r as usize * world.cell_columns];
                     for line_ref in cell.lines.iter() {
-                        // let line = &world.lines[*line_ref];
-                        // self.line_collision(world, line);
+                        let line = &world.lines.get(*line_ref);
+                        self.line_collision(world, line);
                     }
                 }
             }

@@ -1,4 +1,5 @@
 use crate::map::line::Line;
+use crate::map::line::LineSystem;
 use crate::map::sector;
 use crate::map::sector::Sector;
 use crate::map::triangulate::triangulate_sector;
@@ -16,7 +17,7 @@ pub struct WorldCell {
 }
 
 impl WorldCell {
-    pub fn add_thing(&mut self, thing: usize) {
+    pub fn push_thing(&mut self, thing: usize) {
         self.things.push(thing);
     }
     pub fn remove_thing(&mut self, thing: usize) {
@@ -33,6 +34,7 @@ impl WorldCell {
 pub struct World {
     pub things: Vec<Thing>,
     pub sectors: Vec<Sector>,
+    pub lines: LineSystem,
     pub cells: Vec<WorldCell>,
     pub cell_columns: usize,
     pub cell_rows: usize,
@@ -96,17 +98,26 @@ impl World {
     pub fn new() -> Self {
         World {
             things: Vec::new(),
+            lines: LineSystem::new(),
             sectors: Vec::new(),
             cells: Vec::new(),
             cell_columns: 0,
             cell_rows: 0,
         }
     }
-    pub fn add_sector(&mut self, mut sector: Sector) {
+    pub fn push_lines(&mut self, lines: Vec<Line>) -> Vec<usize> {
+        let mut indices = Vec::with_capacity(lines.len());
+        for line in lines.iter().copied() {
+            let index = self.lines.push(line);
+            indices.push(index);
+        }
+        indices
+    }
+    pub fn push_sector(&mut self, mut sector: Sector) {
         sector.index = self.sectors.len();
         self.sectors.push(sector);
     }
-    pub fn add_thing(&mut self, thing: Thing) {
+    pub fn push_thing(&mut self, thing: Thing) {
         self.things.push(thing);
     }
     pub fn find_sector(&self, x: f32, y: f32) -> Option<&Sector> {
@@ -146,7 +157,7 @@ impl World {
 
         let mut u = 0.0;
         for i in 0..lines {
-            let line = &mut sector.lines[i];
+            let line = self.lines.get_mutable(sector.lines[i]);
             build_cell_lines(&mut self.cells, self.cell_columns, line);
             line.update_sectors(plus, minus);
             let x = line.a.x - line.b.x;

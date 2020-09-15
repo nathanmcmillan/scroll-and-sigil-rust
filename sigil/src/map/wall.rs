@@ -1,5 +1,6 @@
 use crate::math::vector::Vector2;
 
+#[derive(Copy, Clone)]
 pub struct Wall {
     pub a: Vector2,
     pub b: Vector2,

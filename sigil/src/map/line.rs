@@ -8,6 +8,7 @@ pub struct Intersect {
     pub ok: bool,
 }
 
+#[derive(Copy, Clone)]
 pub struct Line {
     pub index: usize,
     pub a: Vector2,
@@ -55,5 +56,33 @@ impl Line {
         let y: f32 = 0.0;
 
         Intersect { x, y, ok: true }
+    }
+}
+
+pub struct LineSystem {
+    pub lines: Vec<Line>,
+}
+
+impl LineSystem {
+    pub fn new() -> Self {
+        LineSystem { lines: Vec::new() }
+    }
+    pub fn push(&mut self, mut line: Line) -> usize {
+        let index = self.lines.len();
+        line.index = index;
+        self.lines.push(line);
+        index
+    }
+    pub fn delete(&mut self, index: usize) {
+        self.lines.remove(index);
+    }
+    pub fn get(&self, index: usize) -> &Line {
+        &self.lines[index]
+    }
+    pub fn get_mutable(&mut self, index: usize) -> &mut Line {
+        &mut self.lines[index]
+    }
+    pub fn size(&self) -> usize {
+        self.lines.len()
     }
 }

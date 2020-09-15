@@ -10,6 +10,7 @@ use sigil::math::vector::Vector3;
 use sigil::render::render;
 use sigil::render::sprite::Sprite;
 use sigil::world;
+use sigil::world::world::World;
 use std::collections::HashMap;
 use std::rc::Rc;
 use web_sys::console;
@@ -40,8 +41,9 @@ fn texture_to_sector_buffer<'b>(buffers: &'b mut HashMap<usize, WebGlRenderBuffe
     buffer
 }
 
-fn sector_render(sector: &Sector, buffers: &mut HashMap<usize, WebGlRenderBuffer>, system: &WebGlRenderSystem) {
-    for line in sector.lines.iter() {
+fn sector_render(world: &World, sector: &Sector, buffers: &mut HashMap<usize, WebGlRenderBuffer>, system: &WebGlRenderSystem) {
+    for line_ref in sector.lines.iter() {
+        let line = world.lines.get(*line_ref);
         if let Some(wall) = &line.top {
             let buffer = texture_to_sector_buffer(buffers, system, wall.texture);
             world::render::wall(&mut buffer.buffer, wall);
@@ -140,8 +142,10 @@ impl App {
         // self.buffer.zero();
         // self.system.update_vao(&self.buffer, GL::STATIC_DRAW);
 
-        for sector in self.game.world.sectors.iter() {
-            sector_render(sector, &mut self.sector_buffers, &self.system);
+        let world = &self.game.world;
+
+        for sector in world.sectors.iter() {
+            sector_render(world, sector, &mut self.sector_buffers, &self.system);
         }
 
         for (_, buffer) in &self.sector_buffers {
