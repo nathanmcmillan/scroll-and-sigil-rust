@@ -432,11 +432,10 @@ fn clip_all(sec: &Sector, floor: bool, scale: f32, monotone: &Vec<Rc<RefCell<Pol
                 let c = ref_previous.borrow().point;
                 let angle_1 = (a.x - b.x).atan2(a.y - b.y);
                 let angle_2 = (b.x - c.x).atan2(b.y - c.y);
-                let mut interior = angle_2 - angle_1;
+                let mut interior = angle_2 - angle_1 + std::f32::consts::PI;
                 if interior < 0.0 {
                     interior += 2.0 * std::f32::consts::PI;
                 }
-                interior += std::f32::consts::PI;
                 if interior > 2.0 * std::f32::consts::PI {
                     interior -= 2.0 * std::f32::consts::PI;
                 }

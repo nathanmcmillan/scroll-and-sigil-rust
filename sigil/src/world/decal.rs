@@ -16,7 +16,7 @@ pub struct Decal {
 }
 
 impl Decal {
-    pub fn new(world: &World) -> Self {
+    pub fn new(_world: &World) -> Self {
         let decal = Default::default();
         // add to world
         decal
