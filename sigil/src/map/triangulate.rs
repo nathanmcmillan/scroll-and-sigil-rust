@@ -366,7 +366,6 @@ fn classify(polygons: &Vec<Rc<RefCell<Polygon>>>, monotone: &mut Vec<Rc<RefCell<
                     monotone.push(diagonal.clone());
                     {
                         let mut current = polygon.borrow_mut();
-                        current.merge = true;
                         current.next.push(diagonal.clone());
                         current.previous.push(diagonal.clone());
                     }
