@@ -112,7 +112,7 @@ impl Game {
                 camera.rx -= 2.0 * std::f32::consts::PI;
             }
         }
-        let target = &self.world.things[0];
-        camera.update_orbit(target);
+        // let target = &self.world.things[0];
+        // camera.update_orbit(target);
     }
 }

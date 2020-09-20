@@ -6,7 +6,6 @@ use crate::webgl::texture::Texture;
 use sigil::game::game::Game;
 use sigil::map::sector::Sector;
 use sigil::math::matrix;
-use sigil::math::vector::Vector3;
 use sigil::render::render;
 use sigil::render::sprite::Sprite;
 use sigil::world;
@@ -134,7 +133,7 @@ impl App {
 
         let context = &self.context;
         context.clear_color(0.0, 0.0, 0.0, 1.0);
-        context.depth_func(GL::EQUAL);
+        context.depth_func(GL::LEQUAL);
         context.cull_face(GL::BACK);
         context.disable(GL::BLEND);
 
